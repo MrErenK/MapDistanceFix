@@ -1,0 +1,11 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.mrerenk.mapdistancefix.mixin.client",
+  "compatibilityLevel": "JAVA_21",
+  "refmap": "client-MapDistanceFix-refmap.json",
+  "client": ["MapDecorationMixin", "MapStateMixin"],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

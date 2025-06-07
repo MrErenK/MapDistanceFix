@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "id": "mapdistancefix",
+  "version": "${version}",
+  "name": "MapDistanceFix",
+  "description": "Fixes map player indicators to always show direction, even when outside map boundaries",
+  "authors": ["mrerenk"],
+  "contact": {
+    "homepage": "https://github.com/mrerenk/MapDistanceFix",
+    "sources": "https://github.com/mrerenk/MapDistanceFix"
+  },
+  "license": "MIT",
+  "icon": "assets/mapdistancefix/icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "client": ["com.mrerenk.mapdistancefix.client.MapdistancefixClient"]
+  },
+  "mixins": [
+    {
+      "config": "mapdistancefix.client.mixins.json",
+      "environment": "client"
+    }
+  ],
+  "depends": {
+    "fabricloader": ">=${loader_version}",
+    "fabric-api": "*",
+    "minecraft": "${minecraft_version}"
+  }
+}
