@@ -5,7 +5,6 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import net.minecraft.item.map.MapDecoration;
 import net.minecraft.item.map.MapDecorationType;
-import net.minecraft.registry.Registries;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
@@ -30,7 +29,7 @@ public final class MapDecorationUtils {
         "player_off_map"
     );
 
-    // Thread-safe caching
+    // Thread-safe caching for player decoration type extracted from existing decorations
     private static final AtomicReference<
         RegistryEntry<MapDecorationType>
     > cachedPlayerType = new AtomicReference<>();
@@ -40,36 +39,25 @@ public final class MapDecorationUtils {
     }
 
     /**
-     * Gets the player decoration type, using cached value if available
+     * Gets the player decoration type if it has been cached from existing decorations
      */
     public static Optional<
         RegistryEntry<MapDecorationType>
     > getPlayerDecorationType() {
         RegistryEntry<MapDecorationType> cached = cachedPlayerType.get();
-        if (cached != null) {
-            return Optional.of(cached);
-        }
+        return cached != null ? Optional.of(cached) : Optional.empty();
+    }
 
-        try {
-            MapDecorationType playerType = Registries.MAP_DECORATION_TYPE.get(
-                PLAYER_ID
-            );
-            if (playerType != null) {
-                RegistryEntry<MapDecorationType> entry =
-                    Registries.MAP_DECORATION_TYPE.getEntry(playerType);
-                if (entry != null) {
-                    cachedPlayerType.compareAndSet(null, entry);
-                    return Optional.of(entry);
-                }
-            }
-        } catch (Exception e) {
-            MapdistancefixClient.LOGGER.warn(
-                "Failed to get player decoration type: {}",
-                e.getMessage()
+    /**
+     * Attempts to extract and cache player decoration type from an existing player decoration
+     */
+    public static void cachePlayerTypeFromDecoration(MapDecoration decoration) {
+        if (isPlayer(decoration) && cachedPlayerType.get() == null) {
+            cachedPlayerType.compareAndSet(null, decoration.type());
+            MapdistancefixClient.LOGGER.info(
+                "Successfully cached player decoration type from existing decoration"
             );
         }
-
-        return Optional.empty();
     }
 
     /**
@@ -83,7 +71,7 @@ public final class MapDecorationUtils {
     }
 
     /**
-     * Creates a player decoration with proper type and rotation
+     * Creates a player decoration with proper type and rotation if type is available
      */
     public static Optional<MapDecoration> createPlayerDecoration(
         byte x,
@@ -97,7 +85,7 @@ public final class MapDecorationUtils {
     }
 
     /**
-     * Converts an off-map decoration to a regular player decoration
+     * Converts an off-map decoration to a regular player decoration if possible
      */
     public static Optional<MapDecoration> convertOffMapDecoration(
         MapDecoration original,
@@ -107,7 +95,36 @@ public final class MapDecorationUtils {
             return Optional.of(original);
         }
 
-        return createPlayerDecoration(original.x(), original.z(), newRotation);
+        // Try to get cached player type
+        RegistryEntry<MapDecorationType> playerType = cachedPlayerType.get();
+        if (playerType != null) {
+            MapdistancefixClient.LOGGER.debug(
+                "Converting off-map decoration to player decoration"
+            );
+            return Optional.of(
+                new MapDecoration(
+                    playerType,
+                    original.x(),
+                    original.z(),
+                    newRotation,
+                    Optional.empty()
+                )
+            );
+        }
+
+        // Fallback: return original with updated rotation (still better than vanilla)
+        MapdistancefixClient.LOGGER.debug(
+            "Updating off-map decoration rotation (no player type cached yet)"
+        );
+        return Optional.of(
+            new MapDecoration(
+                original.type(),
+                original.x(),
+                original.z(),
+                newRotation,
+                Optional.empty()
+            )
+        );
     }
 
     /**
@@ -166,6 +183,17 @@ public final class MapDecorationUtils {
         }
 
         return new EdgePosition(edgeX, edgeZ);
+    }
+
+    /**
+     * Gets diagnostic information about the current state
+     */
+    public static String getDiagnosticInfo() {
+        RegistryEntry<MapDecorationType> cached = cachedPlayerType.get();
+        return String.format(
+            "Player decoration type cached: %s",
+            cached != null ? "Yes" : "No"
+        );
     }
 
     /**

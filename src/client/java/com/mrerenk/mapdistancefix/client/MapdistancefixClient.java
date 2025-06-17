@@ -21,18 +21,6 @@ public class MapdistancefixClient implements ClientModInitializer {
             .orElse("Unknown");
 
         LOGGER.info("Initializing {} v{}", MOD_NAME, version);
-
-        // Pre-cache decoration types during initialization
-        try {
-            com.mrerenk.mapdistancefix.util.MapDecorationUtils.getPlayerDecorationType();
-            LOGGER.debug("Pre-cached decoration types successfully");
-        } catch (Exception e) {
-            LOGGER.warn(
-                "Failed to pre-cache decoration types: {}",
-                e.getMessage()
-            );
-        }
-
         LOGGER.info("{} v{} initialized successfully", MOD_NAME, version);
     }
 }

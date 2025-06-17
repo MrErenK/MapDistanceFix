@@ -29,11 +29,6 @@ public class MapDecorationMixin {
     @Shadow
     @Final
     @Mutable
-    private RegistryEntry<MapDecorationType> type;
-
-    @Shadow
-    @Final
-    @Mutable
     private byte rotation;
 
     @Inject(method = "<init>", at = @At("TAIL"))
@@ -51,22 +46,16 @@ public class MapDecorationMixin {
         }
 
         try {
-            // Replace with player decoration type
-            MapDecorationUtils.getPlayerDecorationType()
-                .ifPresent(playerType -> {
-                    this.type = playerType;
-
-                    // Update rotation based on player's facing direction
-                    MinecraftClient client = MinecraftClient.getInstance();
-                    if (client != null && client.player != null) {
-                        this.rotation = MapDecorationUtils.calculateMapRotation(
-                            client.player.getYaw()
-                        );
-                    }
-                });
+            // Update rotation based on player's facing direction
+            MinecraftClient client = MinecraftClient.getInstance();
+            if (client != null && client.player != null) {
+                this.rotation = MapDecorationUtils.calculateMapRotation(
+                    client.player.getYaw()
+                );
+            }
         } catch (Exception e) {
             MapdistancefixClient.LOGGER.error(
-                "Error replacing off-map decoration: {}",
+                "Error updating off-map decoration rotation: {}",
                 e.getMessage()
             );
         }

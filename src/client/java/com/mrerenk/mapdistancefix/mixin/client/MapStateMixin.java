@@ -34,8 +34,11 @@ public class MapStateMixin {
             boolean needsModification = false;
             List<MapDecoration> modifiedDecorations = null;
 
-            // First pass: check what we have and what needs modification
+            // First pass: extract player type from existing decorations and check what we have
             for (MapDecoration decoration : decorations) {
+                // Cache player decoration type for future use
+                MapDecorationUtils.cachePlayerTypeFromDecoration(decoration);
+
                 if (
                     MapDecorationUtils.isPlayer(decoration) ||
                     MapDecorationUtils.isPlayerOffMap(decoration)
