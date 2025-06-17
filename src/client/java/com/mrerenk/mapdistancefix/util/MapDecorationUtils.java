@@ -5,6 +5,7 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import net.minecraft.item.map.MapDecoration;
 import net.minecraft.item.map.MapDecorationType;
+import net.minecraft.registry.Registries;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
@@ -29,34 +30,86 @@ public final class MapDecorationUtils {
         "player_off_map"
     );
 
-    // Thread-safe caching for player decoration type extracted from existing decorations
+    // Thread-safe caching for player decoration type
     private static final AtomicReference<
         RegistryEntry<MapDecorationType>
     > cachedPlayerType = new AtomicReference<>();
+
+    // Flag to track if we've attempted registry lookup
+    private static volatile boolean registryLookupAttempted = false;
 
     private MapDecorationUtils() {
         // Utility class
     }
 
     /**
-     * Gets the player decoration type if it has been cached from existing decorations
+     * Gets the player decoration type, attempting registry lookup if not cached
      */
     public static Optional<
         RegistryEntry<MapDecorationType>
     > getPlayerDecorationType() {
         RegistryEntry<MapDecorationType> cached = cachedPlayerType.get();
+
+        // If we have a cached value, return it
+        if (cached != null) {
+            return Optional.of(cached);
+        }
+
+        // If we haven't attempted registry lookup yet, try it now
+        if (!registryLookupAttempted) {
+            attemptRegistryLookup();
+        }
+
+        // Return cached value (may still be null if lookup failed)
+        cached = cachedPlayerType.get();
         return cached != null ? Optional.of(cached) : Optional.empty();
     }
 
     /**
+     * Attempts to look up player decoration type from registry
+     */
+    private static void attemptRegistryLookup() {
+        registryLookupAttempted = true;
+
+        try {
+            var playerTypeOptional = Registries.MAP_DECORATION_TYPE.getEntry(
+                PLAYER_ID
+            );
+            if (playerTypeOptional.isPresent()) {
+                if (
+                    cachedPlayerType.compareAndSet(
+                        null,
+                        playerTypeOptional.get()
+                    )
+                ) {
+                    MapdistancefixClient.LOGGER.info(
+                        "Successfully cached player decoration type from registry lookup"
+                    );
+                }
+            } else {
+                MapdistancefixClient.LOGGER.warn(
+                    "Could not find player decoration type in registry"
+                );
+            }
+        } catch (Exception e) {
+            MapdistancefixClient.LOGGER.error(
+                "Error during registry lookup for player decoration type: {}",
+                e.getMessage()
+            );
+        }
+    }
+
+    /**
      * Attempts to extract and cache player decoration type from an existing player decoration
+     * This serves as a backup/validation method
      */
     public static void cachePlayerTypeFromDecoration(MapDecoration decoration) {
         if (isPlayer(decoration) && cachedPlayerType.get() == null) {
-            cachedPlayerType.compareAndSet(null, decoration.type());
-            MapdistancefixClient.LOGGER.info(
-                "Successfully cached player decoration type from existing decoration"
-            );
+            if (cachedPlayerType.compareAndSet(null, decoration.type())) {
+                MapdistancefixClient.LOGGER.info(
+                    "Successfully cached player decoration type from existing decoration"
+                );
+            }
         }
     }
 
@@ -95,15 +148,17 @@ public final class MapDecorationUtils {
             return Optional.of(original);
         }
 
-        // Try to get cached player type
-        RegistryEntry<MapDecorationType> playerType = cachedPlayerType.get();
-        if (playerType != null) {
+        // Try to get player type (this will attempt registry lookup if needed)
+        Optional<RegistryEntry<MapDecorationType>> playerTypeOpt =
+            getPlayerDecorationType();
+
+        if (playerTypeOpt.isPresent()) {
             MapdistancefixClient.LOGGER.debug(
                 "Converting off-map decoration to player decoration"
             );
             return Optional.of(
                 new MapDecoration(
-                    playerType,
+                    playerTypeOpt.get(),
                     original.x(),
                     original.z(),
                     newRotation,
@@ -114,7 +169,7 @@ public final class MapDecorationUtils {
 
         // Fallback: return original with updated rotation (still better than vanilla)
         MapdistancefixClient.LOGGER.debug(
-            "Updating off-map decoration rotation (no player type cached yet)"
+            "Updating off-map decoration rotation (no player type available)"
         );
         return Optional.of(
             new MapDecoration(
@@ -183,17 +238,6 @@ public final class MapDecorationUtils {
         }
 
         return new EdgePosition(edgeX, edgeZ);
-    }
-
-    /**
-     * Gets diagnostic information about the current state
-     */
-    public static String getDiagnosticInfo() {
-        RegistryEntry<MapDecorationType> cached = cachedPlayerType.get();
-        return String.format(
-            "Player decoration type cached: %s",
-            cached != null ? "Yes" : "No"
-        );
     }
 
     /**
