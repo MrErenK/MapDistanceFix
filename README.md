@@ -2,14 +2,6 @@
 
 A very simple Minecraft Fabric mod that fixes map player indicators to always show the player's position and direction, even when outside map boundaries, making it much easier to navigate treasure maps and other map items.
 
-## ✨ Features
-
-- **Always Visible Player**: Ensures the player icon is always visible on maps, even when far outside the map boundaries
-- **Correct Direction**: Shows the player's actual facing direction instead of a generic off-map indicator
-- **Edge Positioning**: Intelligently positions the player icon at the appropriate map edge when outside boundaries
-- **Performance Optimized**: Minimal impact on game performance with smart caching and efficient calculations
-- **Client-Side Only**: No server modifications required - works on any server
-
 ## 🎯 Why This Mod?
 
 In vanilla Minecraft, when you're far from a map's boundaries, the player indicator either disappears entirely or shows as a generic "player_off_map" decoration without directional information. This mod fixes that by:
@@ -22,9 +14,9 @@ In vanilla Minecraft, when you're far from a map's boundaries, the player indica
 ## 📦 Installation
 
 ### Requirements
-- **Minecraft**: 1.21.5
+- **Minecraft**: 1.21 or later
 - **Fabric Loader**: 0.16.14 or later
-- **Fabric API**: 0.126.0+1.21.5 or later
+- **Fabric API**: 0.102.0+1.21 or later
 
 ### Steps
 1. Install [Fabric Loader](https://fabricmc.net/use/)
@@ -32,24 +24,6 @@ In vanilla Minecraft, when you're far from a map's boundaries, the player indica
 3. Download the latest release of MapDistanceFix
 4. Place both `.jar` files in your `mods` folder
 5. Launch Minecraft with the Fabric profile
-
-## 🔧 Technical Details
-
-### How It Works
-
-The mod uses Fabric's Mixin system to modify map decoration behavior:
-
-1. **MapDecorationMixin**: Intercepts off-map player decoration creation and converts them to regular player decorations with correct rotation
-2. **MapStateMixin**: Ensures a player decoration always exists, creating one at the map edge if necessary
-3. **Smart Caching**: Caches decoration types to minimize registry lookups
-4. **Edge Calculation**: Uses mathematical positioning to place decorations at appropriate map edges
-
-### Performance Considerations
-
-- Decoration types are cached after first lookup
-- Calculations are only performed when necessary
-- Minimal memory footprint
-- No impact on server performance (client-side only)
 
 ## 🔄 Compatibility
 
@@ -70,7 +44,7 @@ The mod uses Fabric's Mixin system to modify map decoration behavior:
 ### Common Issues
 
 **Player decoration not showing**
-- Verify you're using a compatible Minecraft version (1.21.5)
+- Verify you're using a compatible Minecraft version (1.21 or later)
 - Check that Fabric API is properly installed
 - Make sure you're looking at a map item, not just the world map
 
