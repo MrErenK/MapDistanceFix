@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "mapdistancefix",
   "version": "${version}",
-  "name": "MapDistanceFix",
+  "name": "Map Distance Fix",
   "description": "Fixes map player indicators to always show direction, even when outside map boundaries",
   "authors": ["mrerenk"],
   "contact": {

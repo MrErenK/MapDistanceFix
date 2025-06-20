@@ -34,14 +34,14 @@ dependencies {
 
 processResources {
     inputs.property "version", project.version
-    inputs.property "minecraft_version_range", ">=1.21 <=1.21.5"
+    inputs.property "minecraft_version_range", project.minecraft_version_range
     inputs.property "loader_version", project.loader_version
     inputs.property "min_fabric_version", project.min_fabric_version
     filteringCharset "UTF-8"
 
     filesMatching("fabric.mod.json") {
         expand "version": project.version,
-                "minecraft_version_range": ">=1.21 <=1.21.5",
+                "minecraft_version_range": project.minecraft_version_range,
                 "loader_version": project.loader_version,
                 "min_fabric_version": project.min_fabric_version
     }
