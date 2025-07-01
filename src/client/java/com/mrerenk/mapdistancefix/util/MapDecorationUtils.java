@@ -66,31 +66,32 @@ public final class MapDecorationUtils {
     }
 
     /**
-     * Attempts to look up player decoration type from registry
+     * Attempts to look up player decoration type from registry using version-compatible iteration
      */
     private static void attemptRegistryLookup() {
         registryLookupAttempted = true;
 
         try {
-            var playerTypeOptional = Registries.MAP_DECORATION_TYPE.getEntry(
-                PLAYER_ID
-            );
-            if (playerTypeOptional.isPresent()) {
-                if (
-                    cachedPlayerType.compareAndSet(
-                        null,
-                        playerTypeOptional.get()
-                    )
-                ) {
-                    MapdistancefixClient.LOGGER.info(
-                        "Successfully cached player decoration type from registry lookup"
-                    );
+            // Use direct iteration through registry
+            for (MapDecorationType decorationType : Registries.MAP_DECORATION_TYPE) {
+                // Check if this is the player decoration type by comparing with known player decoration
+                if (isPlayerDecorationType(decorationType)) {
+                    // Create registry entry using the reference holder approach
+                    RegistryEntry<MapDecorationType> registryEntry =
+                        RegistryEntry.of(decorationType);
+
+                    if (cachedPlayerType.compareAndSet(null, registryEntry)) {
+                        MapdistancefixClient.LOGGER.info(
+                            "Successfully cached player decoration type from registry iteration"
+                        );
+                    }
+                    return;
                 }
-            } else {
-                MapdistancefixClient.LOGGER.warn(
-                    "Could not find player decoration type in registry"
-                );
             }
+
+            MapdistancefixClient.LOGGER.warn(
+                "Could not find player decoration type in registry"
+            );
         } catch (Exception e) {
             MapdistancefixClient.LOGGER.error(
                 "Error during registry lookup for player decoration type: {}",
@@ -100,8 +101,26 @@ public final class MapDecorationUtils {
     }
 
     /**
+     * Checks if a decoration type is the player decoration type by comparing identifiers
+     */
+    private static boolean isPlayerDecorationType(
+        MapDecorationType decorationType
+    ) {
+        try {
+            // Try to get the identifier from the registry
+            var identifier = Registries.MAP_DECORATION_TYPE.getId(
+                decorationType
+            );
+            return identifier != null && identifier.equals(PLAYER_ID);
+        } catch (Exception e) {
+            // If we can't get the identifier, we can't determine the type
+            return false;
+        }
+    }
+
+    /**
      * Attempts to extract and cache player decoration type from an existing player decoration
-     * This serves as a backup/validation method
+     * This serves as a backup method when registry lookup fails
      */
     public static void cachePlayerTypeFromDecoration(MapDecoration decoration) {
         if (isPlayer(decoration) && cachedPlayerType.get() == null) {
@@ -131,10 +150,9 @@ public final class MapDecorationUtils {
         byte z,
         byte rotation
     ) {
-        return getPlayerDecorationType()
-            .map(type ->
-                new MapDecoration(type, x, z, rotation, Optional.empty())
-            );
+        return getPlayerDecorationType().map(type ->
+            new MapDecoration(type, x, z, rotation, Optional.empty())
+        );
     }
 
     /**

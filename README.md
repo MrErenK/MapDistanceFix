@@ -14,7 +14,7 @@ In vanilla Minecraft, when you're far from a map's boundaries, the player indica
 ## 📦 Installation
 
 ### Requirements
-- **Minecraft**: 1.21 or later
+- **Minecraft**: 1.21 to 1.21.7
 - **Fabric Loader**: 0.16.14 or later
 - **Fabric API**: 0.102.0+1.21 or later
 
@@ -30,10 +30,11 @@ In vanilla Minecraft, when you're far from a map's boundaries, the player indica
 - **Server Compatibility**: Works on any Minecraft server (vanilla, Fabric, Forge, Paper, etc.)
 - **Multiplayer**: Fully compatible with multiplayer environments
 - **Other Mods**: Should be compatible with most other mods that don't heavily modify map rendering
+- **Cross-Version**: Uses version-compatible registry access to work across different Minecraft versions
 
 ## ⚡ Performance
 
-- **Minimal Overhead**: Smart caching prevents repeated registry lookups
+- **Minimal Overhead**: Smart caching prevents repeated registry access
 - **Lazy Processing**: Decorations are only modified when necessary
 - **Thread-Safe**: Uses atomic references for safe concurrent access
 - **Memory Efficient**: No unnecessary object creation in hot paths
@@ -44,9 +45,10 @@ In vanilla Minecraft, when you're far from a map's boundaries, the player indica
 ### Common Issues
 
 **Player decoration not showing**
-- Verify you're using a compatible Minecraft version (1.21 or later)
+- Verify you're using a compatible Minecraft version (1.21 to 1.21.7)
 - Check that Fabric API is properly installed
 - Make sure you're looking at a map item, not just the world map
+- The mod needs to see at least one regular player decoration first to cache the decoration type
 
 ### Getting Help
 

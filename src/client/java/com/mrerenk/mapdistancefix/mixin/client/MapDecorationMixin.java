@@ -4,7 +4,6 @@ import com.mrerenk.mapdistancefix.client.MapdistancefixClient;
 import com.mrerenk.mapdistancefix.util.MapDecorationUtils;
 import java.util.Optional;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.map.MapDecoration;
 import net.minecraft.item.map.MapDecorationType;
 import net.minecraft.registry.entry.RegistryEntry;

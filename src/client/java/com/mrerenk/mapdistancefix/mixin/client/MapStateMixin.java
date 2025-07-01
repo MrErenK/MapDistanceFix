@@ -51,8 +51,11 @@ public class MapStateMixin {
                 }
             }
 
-            // If no player decoration exists, we need to add one
-            if (!hasPlayerDecoration) {
+            // If no player decoration exists and we have a cached player type, we need to add one
+            if (
+                !hasPlayerDecoration &&
+                MapDecorationUtils.getPlayerDecorationType().isPresent()
+            ) {
                 needsModification = true;
             }
 
@@ -76,8 +79,11 @@ public class MapStateMixin {
                     }
                 }
 
-                // Add forced player decoration if none exists
-                if (!hasPlayerDecoration) {
+                // Add forced player decoration if none exists and we have a cached player type
+                if (
+                    !hasPlayerDecoration &&
+                    MapDecorationUtils.getPlayerDecorationType().isPresent()
+                ) {
                     createForcedPlayerDecoration(player).ifPresent(
                         modifiedDecorations::add
                     );
