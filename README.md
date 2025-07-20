@@ -14,7 +14,7 @@ In vanilla Minecraft, when you're far from a map's boundaries, the player indica
 ## 📦 Installation
 
 ### Requirements
-- **Minecraft**: 1.21 to 1.21.7
+- **Minecraft**: 1.21 or later
 - **Fabric Loader**: 0.16.14 or later
 - **Fabric API**: 0.102.0+1.21 or later
 
@@ -45,7 +45,7 @@ In vanilla Minecraft, when you're far from a map's boundaries, the player indica
 ### Common Issues
 
 **Player decoration not showing**
-- Verify you're using a compatible Minecraft version (1.21 to 1.21.7)
+- Verify you're using a compatible Minecraft version (1.21 or later)
 - Check that Fabric API is properly installed
 - Make sure you're looking at a map item, not just the world map
 - The mod needs to see at least one regular player decoration first to cache the decoration type
