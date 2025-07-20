@@ -1,13 +1,14 @@
 {
   "schemaVersion": 1,
-  "id": "mapdistancefix",
+  "id": "map-distance-fix",
   "version": "${version}",
   "name": "Map Distance Fix",
   "description": "Fixes map player indicators to always show direction, even when outside map boundaries",
   "authors": ["mrerenk"],
   "contact": {
     "homepage": "https://github.com/mrerenk/MapDistanceFix",
-    "sources": "https://github.com/mrerenk/MapDistanceFix"
+    "sources": "https://github.com/mrerenk/MapDistanceFix",
+    "issues": "https://github.com/mrerenk/MapDistanceFix/issues"
   },
   "license": "MIT",
   "icon": "assets/mapdistancefix/icon.png",
