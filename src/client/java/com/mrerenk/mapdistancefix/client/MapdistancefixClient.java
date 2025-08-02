@@ -7,7 +7,7 @@ import org.slf4j.LoggerFactory;
 
 public class MapdistancefixClient implements ClientModInitializer {
 
-    public static final String MOD_ID = "mapdistancefix";
+    public static final String MOD_ID = "map-distance-fix";
     public static final String MOD_NAME = "MapDistanceFix";
     public static final Logger LOGGER = LoggerFactory.getLogger(MOD_NAME);
 
