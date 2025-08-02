@@ -4,7 +4,6 @@ import com.mrerenk.mapdistancefix.client.MapdistancefixClient;
 import com.mrerenk.mapdistancefix.util.MapDecorationUtils;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.map.MapDecoration;
@@ -18,7 +17,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public class MapStateMixin {
 
     @Inject(method = "getDecorations", at = @At("RETURN"), cancellable = true)
-    private void ensurePlayerDecorationExists(
+    private void convertOffMapPlayerDecorations(
         CallbackInfoReturnable<Iterable<MapDecoration>> cir
     ) {
         var decorations = cir.getReturnValue();
@@ -30,33 +29,18 @@ public class MapStateMixin {
 
         try {
             PlayerEntity player = client.player;
-            boolean hasPlayerDecoration = false;
             boolean needsModification = false;
             List<MapDecoration> modifiedDecorations = null;
 
-            // First pass: extract player type from existing decorations and check what we have
+            // First pass: check if we need to modify any decorations
             for (MapDecoration decoration : decorations) {
                 // Cache player decoration type for future use
                 MapDecorationUtils.cachePlayerTypeFromDecoration(decoration);
 
-                if (
-                    MapDecorationUtils.isPlayer(decoration) ||
-                    MapDecorationUtils.isPlayerOffMap(decoration)
-                ) {
-                    hasPlayerDecoration = true;
-                    if (MapDecorationUtils.isPlayerOffMap(decoration)) {
-                        needsModification = true;
-                        break;
-                    }
+                if (MapDecorationUtils.isPlayerOffMapAny(decoration)) {
+                    needsModification = true;
+                    break;
                 }
-            }
-
-            // If no player decoration exists and we have a cached player type, we need to add one
-            if (
-                !hasPlayerDecoration &&
-                MapDecorationUtils.getPlayerDecorationType().isPresent()
-            ) {
-                needsModification = true;
             }
 
             // Only create new list if modifications are needed
@@ -68,8 +52,8 @@ public class MapStateMixin {
 
                 // Process existing decorations
                 for (MapDecoration decoration : decorations) {
-                    if (MapDecorationUtils.isPlayerOffMap(decoration)) {
-                        // Convert off-map to regular player decoration
+                    if (MapDecorationUtils.isPlayerOffMapAny(decoration)) {
+                        // Convert off-map to regular player decoration, keeping original position
                         MapDecorationUtils.convertOffMapDecoration(
                             decoration,
                             playerRotation
@@ -79,49 +63,13 @@ public class MapStateMixin {
                     }
                 }
 
-                // Add forced player decoration if none exists and we have a cached player type
-                if (
-                    !hasPlayerDecoration &&
-                    MapDecorationUtils.getPlayerDecorationType().isPresent()
-                ) {
-                    createForcedPlayerDecoration(player).ifPresent(
-                        modifiedDecorations::add
-                    );
-                }
-
                 cir.setReturnValue(modifiedDecorations);
             }
         } catch (Exception e) {
             MapdistancefixClient.LOGGER.error(
-                "Error ensuring player decoration exists",
+                "Error converting off-map player decorations",
                 e
             );
-        }
-    }
-
-    private Optional<MapDecoration> createForcedPlayerDecoration(
-        PlayerEntity player
-    ) {
-        try {
-            var edgePos = MapDecorationUtils.calculateEdgePosition(
-                player.getX(),
-                player.getZ()
-            );
-            byte rotation = MapDecorationUtils.calculateMapRotation(
-                player.getYaw()
-            );
-
-            return MapDecorationUtils.createPlayerDecoration(
-                edgePos.x(),
-                edgePos.z(),
-                rotation
-            );
-        } catch (Exception e) {
-            MapdistancefixClient.LOGGER.error(
-                "Error creating forced player decoration",
-                e
-            );
-            return Optional.empty();
         }
     }
 }

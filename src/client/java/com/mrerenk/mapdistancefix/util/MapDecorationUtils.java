@@ -18,8 +18,6 @@ public final class MapDecorationUtils {
     // Constants
     public static final float DEGREES_PER_ROTATION = 22.5f;
     public static final int ROTATION_MASK = 15;
-    public static final byte MAP_EDGE_LIMIT = 127;
-    public static final byte MAP_EDGE_LIMIT_NEG = -127;
 
     private static final Identifier PLAYER_ID = Identifier.of(
         "minecraft",
@@ -28,6 +26,10 @@ public final class MapDecorationUtils {
     private static final Identifier PLAYER_OFF_MAP_ID = Identifier.of(
         "minecraft",
         "player_off_map"
+    );
+    private static final Identifier PLAYER_OFF_LIMITS_ID = Identifier.of(
+        "minecraft",
+        "player_off_limits"
     );
 
     // Thread-safe caching for player decoration type
@@ -156,13 +158,13 @@ public final class MapDecorationUtils {
     }
 
     /**
-     * Converts an off-map decoration to a regular player decoration if possible
+     * Converts an off-map decoration (player_off_map or player_off_limits) to a regular player decoration if possible
      */
     public static Optional<MapDecoration> convertOffMapDecoration(
         MapDecoration original,
         byte newRotation
     ) {
-        if (!isPlayerOffMap(original)) {
+        if (!isPlayerOffMapAny(original)) {
             return Optional.of(original);
         }
 
@@ -172,7 +174,7 @@ public final class MapDecorationUtils {
 
         if (playerTypeOpt.isPresent()) {
             MapdistancefixClient.LOGGER.debug(
-                "Converting off-map decoration to player decoration"
+                "Converting off-map/off-limits decoration to player decoration"
             );
             return Optional.of(
                 new MapDecoration(
@@ -187,7 +189,7 @@ public final class MapDecorationUtils {
 
         // Fallback: return original with updated rotation (still better than vanilla)
         MapdistancefixClient.LOGGER.debug(
-            "Updating off-map decoration rotation (no player type available)"
+            "Updating off-map/off-limits decoration rotation (no player type available)"
         );
         return Optional.of(
             new MapDecoration(
@@ -208,58 +210,25 @@ public final class MapDecorationUtils {
     }
 
     /**
+     * Check if decoration is a player off-limits type.
+     * This is another type of off-map decoration that appears as a small dot.
+     */
+    public static boolean isPlayerOffLimits(MapDecoration decoration) {
+        return decoration.type().matchesId(PLAYER_OFF_LIMITS_ID);
+    }
+
+    /**
+     * Check if decoration is any type of off-map player (off_map or off_limits).
+     * Both types need to be converted to regular player decorations for proper visibility.
+     */
+    public static boolean isPlayerOffMapAny(MapDecoration decoration) {
+        return isPlayerOffMap(decoration) || isPlayerOffLimits(decoration);
+    }
+
+    /**
      * Check if decoration is a player type
      */
     public static boolean isPlayer(MapDecoration decoration) {
         return decoration.type().matchesId(PLAYER_ID);
     }
-
-    /**
-     * Calculates edge position for a player outside map boundaries
-     */
-    public static EdgePosition calculateEdgePosition(
-        double playerX,
-        double playerZ
-    ) {
-        double length = Math.sqrt(playerX * playerX + playerZ * playerZ);
-
-        if (length <= 0) {
-            return new EdgePosition((byte) 0, (byte) 0);
-        }
-
-        double normalizedX = playerX / length;
-        double normalizedZ = playerZ / length;
-
-        double absNormX = Math.abs(normalizedX);
-        double absNormZ = Math.abs(normalizedZ);
-
-        byte edgeX, edgeZ;
-
-        if (absNormX >= absNormZ) {
-            edgeX = (byte) (normalizedX > 0
-                    ? MAP_EDGE_LIMIT
-                    : MAP_EDGE_LIMIT_NEG);
-            edgeZ = (byte) MathHelper.clamp(
-                (normalizedZ * MAP_EDGE_LIMIT) / absNormX,
-                MAP_EDGE_LIMIT_NEG,
-                MAP_EDGE_LIMIT
-            );
-        } else {
-            edgeX = (byte) MathHelper.clamp(
-                (normalizedX * MAP_EDGE_LIMIT) / absNormZ,
-                MAP_EDGE_LIMIT_NEG,
-                MAP_EDGE_LIMIT
-            );
-            edgeZ = (byte) (normalizedZ > 0
-                    ? MAP_EDGE_LIMIT
-                    : MAP_EDGE_LIMIT_NEG);
-        }
-
-        return new EdgePosition(edgeX, edgeZ);
-    }
-
-    /**
-     * Record for edge position coordinates
-     */
-    public record EdgePosition(byte x, byte z) {}
 }

@@ -24,6 +24,10 @@ public class MapDecorationMixin {
         "minecraft",
         "player_off_map"
     );
+    private static final Identifier PLAYER_OFF_LIMITS_ID = Identifier.of(
+        "minecraft",
+        "player_off_limits"
+    );
 
     @Shadow
     @Final
@@ -39,8 +43,11 @@ public class MapDecorationMixin {
         Optional<Text> text,
         CallbackInfo ci
     ) {
-        // Only process player_off_map decorations
-        if (!type.matchesId(PLAYER_OFF_MAP_ID)) {
+        // Only process player_off_map and player_off_limits decorations
+        if (
+            !type.matchesId(PLAYER_OFF_MAP_ID) &&
+            !type.matchesId(PLAYER_OFF_LIMITS_ID)
+        ) {
             return;
         }
 
