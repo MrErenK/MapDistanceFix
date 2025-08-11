@@ -6,9 +6,9 @@ import java.util.Optional;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.item.map.MapDecoration;
 import net.minecraft.item.map.MapDecorationType;
+import net.minecraft.item.map.MapDecorationTypes;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.text.Text;
-import net.minecraft.util.Identifier;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Mutable;
@@ -20,10 +20,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(MapDecoration.class)
 public class MapDecorationMixin {
 
-    private static final Identifier PLAYER_OFF_MAP_ID =
-        MapDecorationUtils.createIdentifier("minecraft", "player_off_map");
-    private static final Identifier PLAYER_OFF_LIMITS_ID =
-        MapDecorationUtils.createIdentifier("minecraft", "player_off_limits");
+    @Shadow
+    @Final
+    @Mutable
+    private RegistryEntry<MapDecorationType> type;
 
     @Shadow
     @Final
@@ -31,7 +31,7 @@ public class MapDecorationMixin {
     private byte rotation;
 
     @Inject(method = "<init>", at = @At("TAIL"))
-    private void replaceOffMapPlayerType(
+    private void convertOffMapPlayerDecoration(
         RegistryEntry<MapDecorationType> type,
         byte x,
         byte z,
@@ -41,23 +41,32 @@ public class MapDecorationMixin {
     ) {
         // Only process player_off_map and player_off_limits decorations
         if (
-            !type.matchesId(PLAYER_OFF_MAP_ID) &&
-            !type.matchesId(PLAYER_OFF_LIMITS_ID)
+            !type.equals(MapDecorationTypes.PLAYER_OFF_MAP) &&
+            !type.equals(MapDecorationTypes.PLAYER_OFF_LIMITS)
         ) {
             return;
         }
 
         try {
-            // Update rotation based on player's facing direction
+            // Update both type and rotation
             MinecraftClient client = MinecraftClient.getInstance();
             if (client != null && client.player != null) {
+                // Convert to regular player decoration type
+                this.type = MapDecorationTypes.PLAYER;
+
+                // Update rotation based on player's facing direction
                 this.rotation = MapDecorationUtils.calculateMapRotation(
                     client.player.getYaw()
+                );
+
+                MapdistancefixClient.LOGGER.debug(
+                    "Converted off-map decoration to player decoration with rotation: {}",
+                    this.rotation
                 );
             }
         } catch (Exception e) {
             MapdistancefixClient.LOGGER.error(
-                "Error updating off-map decoration rotation: {}",
+                "Error converting off-map decoration: {}",
                 e.getMessage()
             );
         }

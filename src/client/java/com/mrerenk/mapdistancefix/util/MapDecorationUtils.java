@@ -2,12 +2,8 @@ package com.mrerenk.mapdistancefix.util;
 
 import com.mrerenk.mapdistancefix.client.MapdistancefixClient;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicReference;
 import net.minecraft.item.map.MapDecoration;
-import net.minecraft.item.map.MapDecorationType;
-import net.minecraft.registry.Registries;
-import net.minecraft.registry.entry.RegistryEntry;
-import net.minecraft.util.Identifier;
+import net.minecraft.item.map.MapDecorationTypes;
 import net.minecraft.util.math.MathHelper;
 
 /**
@@ -19,135 +15,8 @@ public final class MapDecorationUtils {
     public static final float DEGREES_PER_ROTATION = 22.5f;
     public static final int ROTATION_MASK = 15;
 
-    public static Identifier createIdentifier(String namespace, String path) {
-        try {
-            // Try the new method first (MC 1.21+)
-            return Identifier.of(namespace, path);
-        } catch (NoSuchMethodError e) {
-            // Use tryParse as fallback - works in all versions
-            String identifierString = namespace + ":" + path;
-            Identifier result = Identifier.tryParse(identifierString);
-            if (result == null) {
-                throw new IllegalArgumentException(
-                    "Invalid identifier: " + identifierString
-                );
-            }
-            return result;
-        }
-    }
-
-    public static Identifier createIdentifier(String path) {
-        return createIdentifier("minecraft", path);
-    }
-
-    private static final Identifier PLAYER_ID = createIdentifier("player");
-    private static final Identifier PLAYER_OFF_MAP_ID = createIdentifier(
-        "player_off_map"
-    );
-    private static final Identifier PLAYER_OFF_LIMITS_ID = createIdentifier(
-        "player_off_limits"
-    );
-
-    // Thread-safe caching for player decoration type
-    private static final AtomicReference<
-        RegistryEntry<MapDecorationType>
-    > cachedPlayerType = new AtomicReference<>();
-
-    // Flag to track if we've attempted registry lookup
-    private static volatile boolean registryLookupAttempted = false;
-
     private MapDecorationUtils() {
         // Utility class
-    }
-
-    /**
-     * Gets the player decoration type, attempting registry lookup if not cached
-     */
-    public static Optional<
-        RegistryEntry<MapDecorationType>
-    > getPlayerDecorationType() {
-        RegistryEntry<MapDecorationType> cached = cachedPlayerType.get();
-
-        // If we have a cached value, return it
-        if (cached != null) {
-            return Optional.of(cached);
-        }
-
-        // If we haven't attempted registry lookup yet, try it now
-        if (!registryLookupAttempted) {
-            attemptRegistryLookup();
-        }
-
-        // Return cached value (may still be null if lookup failed)
-        cached = cachedPlayerType.get();
-        return cached != null ? Optional.of(cached) : Optional.empty();
-    }
-
-    /**
-     * Attempts to look up player decoration type from registry using version-compatible iteration
-     */
-    private static void attemptRegistryLookup() {
-        registryLookupAttempted = true;
-
-        try {
-            // Use direct iteration through registry
-            for (MapDecorationType decorationType : Registries.MAP_DECORATION_TYPE) {
-                // Check if this is the player decoration type by comparing with known player decoration
-                if (isPlayerDecorationType(decorationType)) {
-                    // Create registry entry using the reference holder approach
-                    RegistryEntry<MapDecorationType> registryEntry =
-                        RegistryEntry.of(decorationType);
-
-                    if (cachedPlayerType.compareAndSet(null, registryEntry)) {
-                        MapdistancefixClient.LOGGER.info(
-                            "Successfully cached player decoration type from registry iteration"
-                        );
-                    }
-                    return;
-                }
-            }
-
-            MapdistancefixClient.LOGGER.warn(
-                "Could not find player decoration type in registry"
-            );
-        } catch (Exception e) {
-            MapdistancefixClient.LOGGER.error(
-                "Error during registry lookup for player decoration type: {}",
-                e.getMessage()
-            );
-        }
-    }
-
-    /**
-     * Checks if a decoration type is the player decoration type by comparing identifiers
-     */
-    private static boolean isPlayerDecorationType(
-        MapDecorationType decorationType
-    ) {
-        try {
-            // Try to get the identifier from the registry
-            var identifier = Registries.MAP_DECORATION_TYPE.getId(
-                decorationType
-            );
-            return identifier != null && identifier.equals(PLAYER_ID);
-        } catch (Exception e) {
-            // If we can't get the identifier, we can't determine the type
-            return false;
-        }
-    }
-
-    /**
-     * Attempts to extract and cache player decoration type from an existing player decoration
-     * This serves as a backup method when registry lookup fails
-     */
-    public static void cachePlayerTypeFromDecoration(MapDecoration decoration) {
-        if (isPlayer(decoration) && cachedPlayerType.get() == null) {
-            if (cachedPlayerType.compareAndSet(null, decoration.type())) {
-                MapdistancefixClient.LOGGER.info(
-                    "Successfully cached player decoration type from existing decoration"
-                );
-            }
-        }
     }
 
     /**
@@ -161,20 +30,24 @@ public final class MapDecorationUtils {
     }
 
     /**
-     * Creates a player decoration with proper type and rotation if type is available
+     * Creates a player decoration with proper type and rotation
      */
-    public static Optional<MapDecoration> createPlayerDecoration(
+    public static MapDecoration createPlayerDecoration(
         byte x,
         byte z,
         byte rotation
     ) {
-        return getPlayerDecorationType().map(type ->
-            new MapDecoration(type, x, z, rotation, Optional.empty())
+        return new MapDecoration(
+            MapDecorationTypes.PLAYER,
+            x,
+            z,
+            rotation,
+            Optional.empty()
         );
     }
 
     /**
-     * Converts an off-map decoration (player_off_map or player_off_limits) to a regular player decoration if possible
+     * Converts an off-map decoration to a regular player decoration
      */
     public static Optional<MapDecoration> convertOffMapDecoration(
         MapDecoration original,
@@ -184,32 +57,13 @@ public final class MapDecorationUtils {
             return Optional.of(original);
         }
 
-        // Try to get player type (this will attempt registry lookup if needed)
-        Optional<RegistryEntry<MapDecorationType>> playerTypeOpt =
-            getPlayerDecorationType();
-
-        if (playerTypeOpt.isPresent()) {
-            MapdistancefixClient.LOGGER.debug(
-                "Converting off-map/off-limits decoration to player decoration"
-            );
-            return Optional.of(
-                new MapDecoration(
-                    playerTypeOpt.get(),
-                    original.x(),
-                    original.z(),
-                    newRotation,
-                    Optional.empty()
-                )
-            );
-        }
-
-        // Fallback: return original with updated rotation (still better than vanilla)
         MapdistancefixClient.LOGGER.debug(
-            "Updating off-map/off-limits decoration rotation (no player type available)"
+            "Converting off-map/off-limits decoration to player decoration"
         );
+
         return Optional.of(
             new MapDecoration(
-                original.type(),
+                MapDecorationTypes.PLAYER,
                 original.x(),
                 original.z(),
                 newRotation,
@@ -222,20 +76,18 @@ public final class MapDecorationUtils {
      * Check if decoration is a player off-map type
      */
     public static boolean isPlayerOffMap(MapDecoration decoration) {
-        return decoration.type().matchesId(PLAYER_OFF_MAP_ID);
+        return decoration.type().equals(MapDecorationTypes.PLAYER_OFF_MAP);
     }
 
     /**
-     * Check if decoration is a player off-limits type.
-     * This is another type of off-map decoration that appears as a small dot.
+     * Check if decoration is a player off-limits type
      */
     public static boolean isPlayerOffLimits(MapDecoration decoration) {
-        return decoration.type().matchesId(PLAYER_OFF_LIMITS_ID);
+        return decoration.type().equals(MapDecorationTypes.PLAYER_OFF_LIMITS);
     }
 
     /**
-     * Check if decoration is any type of off-map player (off_map or off_limits).
-     * Both types need to be converted to regular player decorations for proper visibility.
+     * Check if decoration is any type of off-map player (off_map or off_limits)
      */
     public static boolean isPlayerOffMapAny(MapDecoration decoration) {
         return isPlayerOffMap(decoration) || isPlayerOffLimits(decoration);
@@ -245,6 +97,16 @@ public final class MapDecorationUtils {
      * Check if decoration is a player type
      */
     public static boolean isPlayer(MapDecoration decoration) {
-        return decoration.type().matchesId(PLAYER_ID);
+        return decoration.type().equals(MapDecorationTypes.PLAYER);
+    }
+
+    /**
+     * Gets the correct decoration type for off-map conversions
+     */
+    public static boolean shouldConvertType(MapDecoration decoration) {
+        return (
+            decoration.type().equals(MapDecorationTypes.PLAYER_OFF_MAP) ||
+            decoration.type().equals(MapDecorationTypes.PLAYER_OFF_LIMITS)
+        );
     }
 }
