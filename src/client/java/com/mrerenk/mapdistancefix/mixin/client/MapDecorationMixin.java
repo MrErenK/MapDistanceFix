@@ -20,14 +20,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(MapDecoration.class)
 public class MapDecorationMixin {
 
-    private static final Identifier PLAYER_OFF_MAP_ID = Identifier.of(
-        "minecraft",
-        "player_off_map"
-    );
-    private static final Identifier PLAYER_OFF_LIMITS_ID = Identifier.of(
-        "minecraft",
-        "player_off_limits"
-    );
+    private static final Identifier PLAYER_OFF_MAP_ID =
+        MapDecorationUtils.createIdentifier("minecraft", "player_off_map");
+    private static final Identifier PLAYER_OFF_LIMITS_ID =
+        MapDecorationUtils.createIdentifier("minecraft", "player_off_limits");
 
     @Shadow
     @Final

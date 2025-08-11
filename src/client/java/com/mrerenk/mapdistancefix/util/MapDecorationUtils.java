@@ -19,16 +19,32 @@ public final class MapDecorationUtils {
     public static final float DEGREES_PER_ROTATION = 22.5f;
     public static final int ROTATION_MASK = 15;
 
-    private static final Identifier PLAYER_ID = Identifier.of(
-        "minecraft",
-        "player"
-    );
-    private static final Identifier PLAYER_OFF_MAP_ID = Identifier.of(
-        "minecraft",
+    public static Identifier createIdentifier(String namespace, String path) {
+        try {
+            // Try the new method first (MC 1.21+)
+            return Identifier.of(namespace, path);
+        } catch (NoSuchMethodError e) {
+            // Use tryParse as fallback - works in all versions
+            String identifierString = namespace + ":" + path;
+            Identifier result = Identifier.tryParse(identifierString);
+            if (result == null) {
+                throw new IllegalArgumentException(
+                    "Invalid identifier: " + identifierString
+                );
+            }
+            return result;
+        }
+    }
+
+    public static Identifier createIdentifier(String path) {
+        return createIdentifier("minecraft", path);
+    }
+
+    private static final Identifier PLAYER_ID = createIdentifier("player");
+    private static final Identifier PLAYER_OFF_MAP_ID = createIdentifier(
         "player_off_map"
     );
-    private static final Identifier PLAYER_OFF_LIMITS_ID = Identifier.of(
-        "minecraft",
+    private static final Identifier PLAYER_OFF_LIMITS_ID = createIdentifier(
         "player_off_limits"
     );
 

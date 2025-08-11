@@ -4,19 +4,18 @@ A very simple Minecraft Fabric mod that fixes map player indicators to always sh
 
 ## 🎯 Why This Mod?
 
-In vanilla Minecraft, when you're far from a map's boundaries, the player indicator either disappears entirely or shows as a generic "player_off_map" decoration without directional information. This mod fixes that by:
+In vanilla Minecraft, when you're far from a map's boundaries, the player indicator either disappears entirely or shows as a generic "player_off_map" and "player_off_limits" decorations without directional information. This mod fixes that by:
 
 1. Converting off-map player decorations to regular player decorations
-2. Positioning the player icon at the appropriate map edge
-3. Maintaining correct rotation to show which direction you're facing
-4. Ensuring the player is always visible for better navigation
+2. Maintaining correct rotation to show which direction you're facing
+3.  Ensuring the player is always visible for better navigation (Does not work with normal maps. Only treasure and explorer maps. Due to vanilla limitation, the player icon disappears if you are far away on normal maps.)
 
 ## 📦 Installation
 
 ### Requirements
-- **Minecraft**: 1.21 or later
-- **Fabric Loader**: 0.16.14 or later
-- **Fabric API**: 0.102.0+1.21 or later
+- **Minecraft**: 1.20.5 or later
+- **Fabric Loader**: 0.17.2 or later
+- **Fabric API**: 0.97.8+1.20.5 or later
 
 ### Steps
 1. Install [Fabric Loader](https://fabricmc.net/use/)
@@ -27,17 +26,13 @@ In vanilla Minecraft, when you're far from a map's boundaries, the player indica
 
 ## 🔄 Compatibility
 
-- **Server Compatibility**: Works on any Minecraft server (vanilla, Fabric, Forge, Paper, etc.)
-- **Multiplayer**: Fully compatible with multiplayer environments
+- **Server Compatibility**: Should work on any Minecraft server (vanilla, Fabric, Forge, Paper, etc.)
+- **Multiplayer**: Compatible with multiplayer environments
 - **Other Mods**: Should be compatible with most other mods that don't heavily modify map rendering
-- **Cross-Version**: Uses version-compatible registry access to work across different Minecraft versions
 
 ## ⚡ Performance
 
 - **Minimal Overhead**: Smart caching prevents repeated registry access
-- **Lazy Processing**: Decorations are only modified when necessary
-- **Thread-Safe**: Uses atomic references for safe concurrent access
-- **Memory Efficient**: No unnecessary object creation in hot paths
 - **Client-Side Only**: Zero server performance impact
 
 ## 🐛 Troubleshooting
@@ -45,9 +40,6 @@ In vanilla Minecraft, when you're far from a map's boundaries, the player indica
 ### Common Issues
 
 **Player decoration not showing**
-- Verify you're using a compatible Minecraft version (1.21 or later)
-- Check that Fabric API is properly installed
-- Make sure you're looking at a map item, not just the world map
 - The mod needs to see at least one regular player decoration first to cache the decoration type
 
 ### Getting Help
