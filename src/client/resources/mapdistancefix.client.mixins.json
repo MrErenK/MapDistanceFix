@@ -4,7 +4,7 @@
   "package": "com.mrerenk.mapdistancefix.mixin.client",
   "compatibilityLevel": "JAVA_21",
   "refmap": "client-MapDistanceFix-refmap.json",
-  "client": ["MapDecorationMixin"],
+  "client": ["MapStateMixin"],
   "injectors": {
     "defaultRequire": 1
   }
