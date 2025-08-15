@@ -8,7 +8,7 @@ In vanilla Minecraft, when you're far from a map's boundaries, the player indica
 
 1. Converting off-map player decorations to regular player decorations
 2. Maintaining correct rotation to show which direction you're facing
-3.  Ensuring the player is always visible for better navigation (Does not work with normal maps. Only treasure and explorer maps. Due to vanilla limitation, the player icon disappears if you are far away on normal maps.)
+3. Ensuring the player is always visible for better navigation. This only works on Minecraft versions after 1.21.1, not including 1.21.1. Also only in singleplayer.
 
 ## 📦 Installation
 
@@ -32,7 +32,6 @@ In vanilla Minecraft, when you're far from a map's boundaries, the player indica
 
 ## ⚡ Performance
 
-- **Minimal Overhead**: Smart caching prevents repeated registry access
 - **Client-Side Only**: Zero server performance impact
 
 ## 🐛 Troubleshooting
