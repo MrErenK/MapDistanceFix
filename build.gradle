@@ -1,9 +1,8 @@
 plugins {
     id 'fabric-loom' version "${loom_version}"
-    id 'maven-publish'
 }
 
-version = project.mod_version
+version = project.new_mod_version
 group = project.maven_group
 loom_version = project.loom_version
 
@@ -33,20 +32,153 @@ dependencies {
     modImplementation "net.fabricmc.fabric-api:fabric-api:${System.getenv('FABRIC_VERSION') ?: project.fabric_version}"
 }
 
+// Default processResources (for development)
 processResources {
     inputs.property "version", project.version
-    inputs.property "minecraft_version_range", project.minecraft_version_range
+    inputs.property "minecraft_version_range", project.new_minecraft_version_range
     inputs.property "loader_version", project.loader_version
-    inputs.property "min_fabric_version", project.min_fabric_version
+    inputs.property "min_fabric_version", project.new_min_fabric_version
     filteringCharset "UTF-8"
 
     filesMatching("fabric.mod.json") {
         expand "version": project.version,
-                "minecraft_version_range": project.minecraft_version_range,
+                "minecraft_version_range": project.new_minecraft_version_range,
                 "loader_version": project.loader_version,
-                "min_fabric_version": project.min_fabric_version
+                "min_fabric_version": project.new_min_fabric_version,
+                "fabric_dep_name": "fabric-api"
     }
 }
+
+// Task for older versions (1.17 - 1.19.1)
+task processResourcesOld(type: ProcessResources) {
+    from sourceSets.main.resources
+    into layout.buildDirectory.dir("resources/old")
+
+    inputs.property "version", project.old_mod_version
+    inputs.property "minecraft_version_range", project.old_minecraft_version_range
+    inputs.property "loader_version", project.loader_version
+    inputs.property "min_fabric_version", project.old_min_fabric_version
+    inputs.property "fabric_dep_name", "fabric"
+    filteringCharset "UTF-8"
+
+    filesMatching("fabric.mod.json") {
+        expand "version": project.old_mod_version,
+                "minecraft_version_range": project.old_minecraft_version_range,
+                "loader_version": project.loader_version,
+                "min_fabric_version": project.old_min_fabric_version,
+                "fabric_dep_name": "fabric"
+    }
+}
+
+// Task for newer versions (1.19.2 - 1.20.1)
+task processResourcesNew(type: ProcessResources) {
+    from sourceSets.main.resources
+    into layout.buildDirectory.dir("resources/new")
+
+    inputs.property "version", project.new_mod_version
+    inputs.property "minecraft_version_range", project.new_minecraft_version_range
+    inputs.property "loader_version", project.loader_version
+    inputs.property "min_fabric_version", project.new_min_fabric_version
+    inputs.property "fabric_dep_name", "fabric-api"
+    filteringCharset "UTF-8"
+
+    filesMatching("fabric.mod.json") {
+        expand "version": project.new_mod_version,
+                "minecraft_version_range": project.new_minecraft_version_range,
+                "loader_version": project.loader_version,
+                "min_fabric_version": project.new_min_fabric_version,
+                "fabric_dep_name": "fabric-api"
+    }
+}
+
+// JAR for older versions (unmapped)
+task jarOldUnmapped(type: Jar) {
+    dependsOn classes, processResourcesOld, processClientResources
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+
+    from sourceSets.main.output.classesDirs
+    from sourceSets.client.output.classesDirs
+
+    from layout.buildDirectory.dir("resources/old")
+
+    from(sourceSets.main.output.resourcesDir) {
+        exclude 'fabric.mod.json'
+    }
+    from(sourceSets.client.output.resourcesDir) {
+        exclude 'fabric.mod.json'
+    }
+
+    archiveBaseName = "${project.archives_base_name}-old"
+    archiveVersion = project.old_mod_version.replaceAll(/\+mc.*/, "")
+    archiveClassifier = "mc1.17-1.19.1"
+
+    from("LICENSE") {
+        rename { "${it}_${project.archives_base_name}" }
+    }
+}
+
+// JAR for newer versions (unmapped)
+task jarNewUnmapped(type: Jar) {
+    dependsOn classes, processResourcesNew, processClientResources
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+
+    from sourceSets.main.output.classesDirs
+    from sourceSets.client.output.classesDirs
+
+    from layout.buildDirectory.dir("resources/new")
+
+    from(sourceSets.main.output.resourcesDir) {
+        exclude 'fabric.mod.json'
+    }
+    from(sourceSets.client.output.resourcesDir) {
+        exclude 'fabric.mod.json'
+    }
+
+    archiveBaseName = "${project.archives_base_name}-new"
+    archiveVersion = project.new_mod_version.replaceAll(/\+mc.*/, "")
+    archiveClassifier = "mc1.19.2-1.20.1"
+
+    from("LICENSE") {
+        rename { "${it}_${project.archives_base_name}" }
+    }
+}
+
+// Remap task for older versions
+task remapJarOld(type: net.fabricmc.loom.task.RemapJarTask) {
+    dependsOn jarOldUnmapped
+    mustRunAfter jarNewUnmapped
+
+    input = jarOldUnmapped.archiveFile
+    archiveBaseName = project.archives_base_name
+    archiveVersion = project.old_mod_version.replaceAll(/\+mc.*/, "")
+    archiveClassifier = "mc1.17-1.19.1"
+    addNestedDependencies = true
+}
+
+// Remap task for newer versions
+task remapJarNew(type: net.fabricmc.loom.task.RemapJarTask) {
+    dependsOn jarNewUnmapped
+    mustRunAfter jarOldUnmapped
+
+    input = jarNewUnmapped.archiveFile
+    archiveBaseName = project.archives_base_name
+    archiveVersion = project.new_mod_version.replaceAll(/\+mc.*/, "")
+    archiveClassifier = "mc1.19.2-1.20.1"
+    addNestedDependencies = true
+}
+
+// Override the default jar task
+jar {
+    enabled = false
+}
+
+// Override the default remapJar task
+remapJar {
+    enabled = false
+}
+
+// Make build depend on both remap tasks
+build.dependsOn remapJarOld, remapJarNew
 
 def targetJavaVersion = 21
 tasks.withType(JavaCompile).configureEach {
@@ -62,27 +194,4 @@ java {
         toolchain.languageVersion = JavaLanguageVersion.of(targetJavaVersion)
     }
     withSourcesJar()
-}
-
-jar {
-    from("LICENSE") {
-        rename { "${it}_${project.archivesBaseName}" }
-    }
-}
-
-publishing {
-    publications {
-        create("mavenJava", MavenPublication) {
-            artifactId = project.archives_base_name
-            from components.java
-        }
-    }
-
-    // See https://docs.gradle.org/current/userguide/publishing_maven.html for information on how to set up publishing.
-    repositories {
-        // Add repositories to publish to here.
-        // Notice: This block does NOT have the same function as the block in the top level.
-        // The repositories here will be used for publishing your artifact, not for
-        // retrieving dependencies.
-    }
 }
