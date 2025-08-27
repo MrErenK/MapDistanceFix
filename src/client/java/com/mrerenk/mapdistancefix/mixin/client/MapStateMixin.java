@@ -1,10 +1,10 @@
 package com.mrerenk.mapdistancefix.mixin.client;
 
-import com.mrerenk.mapdistancefix.util.MapDecorationUtils;
+import com.mrerenk.mapdistancefix.util.MapIconUtils;
 import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.item.map.MapDecoration;
+import net.minecraft.item.map.MapIcon;
 import net.minecraft.item.map.MapState;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -14,80 +14,57 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(MapState.class)
 public class MapStateMixin {
 
-    // This will only be applied if the method exists in the target version
-    @Inject(
-        method = "isInBounds",
-        at = @At("HEAD"),
-        cancellable = true,
-        require = 0
-    )
-    private static void alwaysShowPlayer(
-        float dx,
-        float dz,
-        CallbackInfoReturnable<Boolean> cir
+    @Inject(method = "getIcons", at = @At("RETURN"), cancellable = true)
+    private void convertOffMapPlayerIcons(
+        CallbackInfoReturnable<Iterable<MapIcon>> cir
     ) {
-        // Check if we're in a player context
-        if (MapDecorationUtils.isPlayerContext()) {
-            cir.setReturnValue(true);
-        }
-    }
-
-    @Inject(method = "getDecorations", at = @At("RETURN"), cancellable = true)
-    private void convertOffMapPlayerDecorations(
-        CallbackInfoReturnable<Iterable<MapDecoration>> cir
-    ) {
-        Iterable<MapDecoration> originalDecorations = cir.getReturnValue();
+        Iterable<MapIcon> originalIcons = cir.getReturnValue();
         MinecraftClient client = MinecraftClient.getInstance();
 
-        if (
-            client == null ||
-            client.player == null ||
-            originalDecorations == null
-        ) {
+        if (client == null || client.player == null || originalIcons == null) {
             return;
         }
 
-        List<MapDecoration> modifiedDecorations = null;
+        List<MapIcon> modifiedIcons = null;
         byte playerRotation = 0;
         boolean rotationCalculated = false;
 
-        MapDecorationUtils.setPlayerContext(true);
+        MapIconUtils.setPlayerContext(true);
         try {
-            for (MapDecoration decoration : originalDecorations) {
-                MapDecorationUtils.cachePlayerTypeFromDecoration(decoration);
+            for (MapIcon icon : originalIcons) {
+                MapIconUtils.cachePlayerTypeFromIcon(icon);
 
-                if (MapDecorationUtils.isPlayerOffMapAny(decoration)) {
-                    if (modifiedDecorations == null) {
-                        modifiedDecorations = new ArrayList<>();
-                        // Backfill previous decorations
-                        for (MapDecoration prev : originalDecorations) {
-                            if (prev == decoration) break;
-                            modifiedDecorations.add(prev);
+                if (MapIconUtils.isPlayerOffMapAny(icon)) {
+                    if (modifiedIcons == null) {
+                        modifiedIcons = new ArrayList<>();
+                        // Backfill previous icons
+                        for (MapIcon prev : originalIcons) {
+                            if (prev == icon) break;
+                            modifiedIcons.add(prev);
                         }
                     }
 
                     if (!rotationCalculated) {
-                        playerRotation =
-                            MapDecorationUtils.calculateMapRotation(
-                                client.player.getYaw()
-                            );
+                        playerRotation = MapIconUtils.calculateMapRotation(
+                            client.player.getYaw()
+                        );
                         rotationCalculated = true;
                     }
 
-                    MapDecorationUtils.convertOffMapDecoration(
-                        decoration,
+                    MapIconUtils.convertOffMapIcon(
+                        icon,
                         playerRotation
-                    ).ifPresent(modifiedDecorations::add);
-                } else if (modifiedDecorations != null) {
-                    modifiedDecorations.add(decoration);
+                    ).ifPresent(modifiedIcons::add);
+                } else if (modifiedIcons != null) {
+                    modifiedIcons.add(icon);
                 }
             }
 
-            if (modifiedDecorations != null) {
-                cir.setReturnValue(modifiedDecorations);
+            if (modifiedIcons != null) {
+                cir.setReturnValue(modifiedIcons);
             }
         } finally {
-            MapDecorationUtils.clearPlayerContext();
+            MapIconUtils.clearPlayerContext();
         }
     }
 }

@@ -2,18 +2,17 @@ package com.mrerenk.mapdistancefix.util;
 
 import com.mrerenk.mapdistancefix.client.MapdistancefixClient;
 import java.lang.ref.WeakReference;
+import java.lang.reflect.Field;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
-import net.minecraft.item.map.MapDecoration;
-import net.minecraft.item.map.MapDecorationType;
-import net.minecraft.item.map.MapDecorationTypes;
-import net.minecraft.registry.entry.RegistryEntry;
+import net.minecraft.item.map.MapIcon;
+import net.minecraft.text.Text;
 import net.minecraft.util.math.MathHelper;
 
 /**
- * Thread-safe utility class for managing map decorations
+ * Thread-safe utility class for managing map icons
  */
-public final class MapDecorationUtils {
+public final class MapIconUtils {
 
     // Constants
     public static final float DEGREES_PER_ROTATION = 22.5f;
@@ -34,26 +33,23 @@ public final class MapDecorationUtils {
         }
     }
 
-    // Thread-safe cache for player decoration type using AtomicReference
+    // Thread-safe cache for player icon type using AtomicReference
     private static final AtomicReference<
-        WeakReference<RegistryEntry<MapDecorationType>>
+        WeakReference<MapIcon.Type>
     > cachedPlayerTypeRef = new AtomicReference<>(null);
 
     /**
-     * Enum for player decoration types for better type safety
+     * Enum for player icon types for better type safety
      */
-    public enum PlayerDecorationType {
-        PLAYER(MapDecorationTypes.PLAYER, "player"),
-        OFF_MAP(MapDecorationTypes.PLAYER_OFF_MAP, "off-map"),
-        OFF_LIMITS(MapDecorationTypes.PLAYER_OFF_LIMITS, "off-limits");
+    public enum PlayerIconType {
+        PLAYER(MapIcon.Type.PLAYER, "player"),
+        OFF_MAP(MapIcon.Type.PLAYER_OFF_MAP, "off-map"),
+        OFF_LIMITS(MapIcon.Type.PLAYER_OFF_LIMITS, "off-limits");
 
-        private final RegistryEntry<MapDecorationType> type;
+        private final MapIcon.Type type;
         private final String displayName;
 
-        PlayerDecorationType(
-            RegistryEntry<MapDecorationType> type,
-            String displayName
-        ) {
+        PlayerIconType(MapIcon.Type type, String displayName) {
             this.type = type;
             this.displayName = displayName;
         }
@@ -62,19 +58,17 @@ public final class MapDecorationUtils {
             return displayName;
         }
 
-        public static Optional<PlayerDecorationType> fromType(
-            RegistryEntry<MapDecorationType> type
-        ) {
-            for (PlayerDecorationType decorationType : values()) {
-                if (decorationType.type.equals(type)) {
-                    return Optional.of(decorationType);
+        public static Optional<PlayerIconType> fromType(MapIcon.Type type) {
+            for (PlayerIconType iconType : values()) {
+                if (iconType.type.equals(type)) {
+                    return Optional.of(iconType);
                 }
             }
             return Optional.empty();
         }
     }
 
-    private MapDecorationUtils() {
+    private MapIconUtils() {
         // Utility class - prevent instantiation
     }
 
@@ -88,61 +82,77 @@ public final class MapDecorationUtils {
     }
 
     /**
-     * Converts an off-map decoration to a regular player decoration
+     * Helper method to get MapIcon type.
      */
-    public static Optional<MapDecoration> convertOffMapDecoration(
-        MapDecoration original,
+    private static MapIcon.Type getIconType(MapIcon icon) {
+        return icon.type();
+    }
+
+    /**
+     * Helper method to get MapIcon X coordinate.
+     */
+    private static byte getIconX(MapIcon icon) {
+        return icon.x();
+    }
+
+    /**
+     * Helper method to get MapIcon Z coordinate.
+     */
+    private static byte getIconZ(MapIcon icon) {
+        return icon.z();
+    }
+
+    /**
+     * Helper method to get MapIcon text.
+     */
+    private static Text getIconText(MapIcon icon) {
+        return icon.text();
+    }
+
+    /**
+     * Converts an off-map icon to a regular player icon
+     */
+    public static Optional<MapIcon> convertOffMapIcon(
+        MapIcon original,
         byte newRotation
     ) {
         return Optional.ofNullable(original)
-            .filter(MapDecorationUtils::isPlayerOffMapAny)
-            .map(decoration -> {
-                PlayerDecorationType.fromType(decoration.type()).ifPresent(
-                    type ->
-                        MapdistancefixClient.LOGGER.debug(
-                            "Converting {} decoration to player decoration",
-                            type.getDisplayName()
-                        )
+            .filter(MapIconUtils::isPlayerOffMapAny)
+            .map(icon -> {
+                PlayerIconType.fromType(getIconType(icon)).ifPresent(type ->
+                    MapdistancefixClient.LOGGER.debug(
+                        "Converting {} icon to player icon",
+                        type.getDisplayName()
+                    )
                 );
 
-                return new MapDecoration(
+                return new MapIcon(
                     getPlayerType(),
-                    decoration.x(),
-                    decoration.z(),
+                    getIconX(icon),
+                    getIconZ(icon),
                     newRotation,
-                    decoration.name()
+                    getIconText(icon)
                 );
             });
     }
 
     /**
-     * Check if decoration type should be converted
+     * Check if icon type should be converted
      */
-    public static boolean shouldConvertDecorationType(
-        RegistryEntry<MapDecorationType> type
-    ) {
+    public static boolean shouldConvertIconType(MapIcon.Type type) {
         if (type == null) return false;
 
-        if (
-            type == MapDecorationTypes.PLAYER_OFF_MAP ||
-            type == MapDecorationTypes.PLAYER_OFF_LIMITS
-        ) {
-            return true;
-        }
-
         return (
-            type.equals(MapDecorationTypes.PLAYER_OFF_MAP) ||
-            type.equals(MapDecorationTypes.PLAYER_OFF_LIMITS)
+            type == MapIcon.Type.PLAYER_OFF_MAP ||
+            type == MapIcon.Type.PLAYER_OFF_LIMITS
         );
     }
 
     /**
-     * Check if decoration is any type of off-map player (off_map or off_limits)
+     * Check if icon is any type of off-map player (off_map or off_limits)
      */
-    public static boolean isPlayerOffMapAny(MapDecoration decoration) {
-        return (
-            decoration != null && shouldConvertDecorationType(decoration.type())
-        );
+    public static boolean isPlayerOffMapAny(MapIcon icon) {
+        return icon != null && shouldConvertIconType(getIconType(icon));
     }
 
     /**
@@ -189,24 +199,23 @@ public final class MapDecorationUtils {
     }
 
     /**
-     * Cache player type from decoration for future use.
+     * Cache player type from icon for future use.
      * This helps avoid repeated lookups and ensures we use the correct player type
      * from the actual game instance.
      */
-    public static void cachePlayerTypeFromDecoration(MapDecoration decoration) {
-        if (decoration == null) {
+    public static void cachePlayerTypeFromIcon(MapIcon icon) {
+        if (icon == null) {
             return;
         }
 
-        // Only cache if it's a regular player decoration (not off-map variants)
-        if (decoration.type().equals(MapDecorationTypes.PLAYER)) {
-            WeakReference<RegistryEntry<MapDecorationType>> newRef =
-                new WeakReference<>(decoration.type());
-
+        // Only cache if it's a regular player icon (not off-map variants)
+        MapIcon.Type iconType = getIconType(icon);
+        if (iconType == MapIcon.Type.PLAYER) {
+            WeakReference<MapIcon.Type> newRef = new WeakReference<>(iconType);
             cachedPlayerTypeRef.compareAndSet(null, newRef);
 
             MapdistancefixClient.LOGGER.debug(
-                "Cached player decoration type from game instance"
+                "Cached player icon type from game instance"
             );
         }
     }
@@ -214,18 +223,30 @@ public final class MapDecorationUtils {
     /**
      * Get the cached player type, falling back to the default if not cached
      */
-    public static RegistryEntry<MapDecorationType> getPlayerType() {
-        WeakReference<RegistryEntry<MapDecorationType>> ref =
-            cachedPlayerTypeRef.get();
+    public static MapIcon.Type getPlayerType() {
+        WeakReference<MapIcon.Type> ref = cachedPlayerTypeRef.get();
         if (ref != null) {
-            RegistryEntry<MapDecorationType> cached = ref.get();
+            MapIcon.Type cached = ref.get();
             if (cached != null) {
                 return cached;
             }
             // Clean up dead reference
             cachedPlayerTypeRef.compareAndSet(ref, null);
         }
-        return MapDecorationTypes.PLAYER;
+
+        return MapIcon.Type.PLAYER;
     }
 
+    /**
+     * Helper method to determine if a MapIcon.Type represents a player
+     */
+    public static boolean isPlayerType(MapIcon.Type type) {
+        if (type == null) return false;
+
+        return (
+            type == MapIcon.Type.PLAYER ||
+            type == MapIcon.Type.PLAYER_OFF_MAP ||
+            type == MapIcon.Type.PLAYER_OFF_LIMITS
+        );
+    }
 }
