@@ -8,14 +8,14 @@ In vanilla Minecraft, when you're far from a map's boundaries, the player indica
 
 1. Converting off-map player decorations to regular player decorations
 2. Maintaining correct rotation to show which direction you're facing
-3. Ensuring the player is always visible for better navigation. This only works on Minecraft versions after 1.21.1, not including 1.21.1. Also only in singleplayer.
+3. Ensuring the player is always visible for better navigation.
 
 ## 📦 Installation
 
 ### Requirements
-- **Minecraft**: 1.20.5 or later
+- **Minecraft**: 1.19.3 to 1.20.1
 - **Fabric Loader**: 0.17.2 or later
-- **Fabric API**: 0.97.8+1.20.5 or later
+- **Fabric API**: 0.76.1+1.19.3 or later
 
 ### Steps
 1. Install [Fabric Loader](https://fabricmc.net/use/)
@@ -27,12 +27,8 @@ In vanilla Minecraft, when you're far from a map's boundaries, the player indica
 ## 🔄 Compatibility
 
 - **Server Compatibility**: Should work on any Minecraft server (vanilla, Fabric, Forge, Paper, etc.)
-- **Multiplayer**: Compatible with multiplayer environments
+- **Multiplayer**: Compatible with multiplayer environments. For always showing players even outside boundaries, the mod needs to be installed on the server as well.
 - **Other Mods**: Should be compatible with most other mods that don't heavily modify map rendering
-
-## ⚡ Performance
-
-- **Client-Side Only**: Zero server performance impact
 
 ## 🐛 Troubleshooting
 
