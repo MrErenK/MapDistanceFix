@@ -12,11 +12,13 @@
   },
   "license": "MIT",
   "icon": "assets/mapdistancefix/icon.png",
-  "environment": "client",
+  "environment": "*",
   "entrypoints": {
+    "main": ["com.mrerenk.mapdistancefix.MapdistancefixMod"],
     "client": ["com.mrerenk.mapdistancefix.client.MapdistancefixClient"]
   },
   "mixins": [
+    "mapdistancefix.mixins.json",
     {
       "config": "mapdistancefix.client.mixins.json",
       "environment": "client"

@@ -14,24 +14,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(MapState.class)
 public class MapStateMixin {
 
-    // This will only be applied if the method exists in the target version
-    @Inject(
-        method = "isInBounds",
-        at = @At("HEAD"),
-        cancellable = true,
-        require = 0
-    )
-    private static void alwaysShowPlayer(
-        float dx,
-        float dz,
-        CallbackInfoReturnable<Boolean> cir
-    ) {
-        // Check if we're in a player context
-        if (MapDecorationUtils.isPlayerContext()) {
-            cir.setReturnValue(true);
-        }
-    }
-
     @Inject(method = "getDecorations", at = @At("RETURN"), cancellable = true)
     private void convertOffMapPlayerDecorations(
         CallbackInfoReturnable<Iterable<MapDecoration>> cir
