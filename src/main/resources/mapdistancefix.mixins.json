@@ -2,16 +2,11 @@
   "required": true,
   "minVersion": "0.8",
   "package": "com.mrerenk.mapdistancefix.mixin",
-  "compatibilityLevel": "JAVA_8",
+  "compatibilityLevel": "JAVA_17",
   "refmap": "mapdistancefix.refmap.json",
-  "mixins": [
-  ],
-  "client": [
-  ],
+  "mixins": ["MapItemSavedDataMixin"],
+  "client": ["client.MapItemSavedDataMixin"],
   "injectors": {
     "defaultRequire": 1
-  },
-  "overwrites": {
-    "requireAnnotations": true
   }
 }
