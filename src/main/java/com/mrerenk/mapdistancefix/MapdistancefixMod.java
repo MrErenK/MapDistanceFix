@@ -21,6 +21,10 @@ public class MapdistancefixMod implements ModInitializer {
             .orElse("Unknown");
 
         LOGGER.info("Initializing {} v{} (Server)", MOD_NAME, version);
-        LOGGER.info("{} v{} server initialized successfully", MOD_NAME, version);
+        LOGGER.info(
+            "{} v{} server initialized successfully",
+            MOD_NAME,
+            version
+        );
     }
 }
