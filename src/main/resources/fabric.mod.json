@@ -15,7 +15,8 @@
   "environment": "*",
   "entrypoints": {
     "main": ["com.mrerenk.mapdistancefix.MapdistancefixMod"],
-    "client": ["com.mrerenk.mapdistancefix.client.MapdistancefixClient"]
+    "client": ["com.mrerenk.mapdistancefix.client.MapdistancefixClient"],
+    "modmenu": ["com.mrerenk.mapdistancefix.config.ModMenuIntegration"]
   },
   "mixins": [
     "mapdistancefix.mixins.json",
@@ -28,5 +29,9 @@
     "fabricloader": ">=${loader_version}",
     "fabric-api": ">=${min_fabric_version}",
     "minecraft": "${minecraft_version_range}"
+  },
+  "suggests": {
+    "cloth-config": "*",
+    "modmenu": "*"
   }
 }
