@@ -1,12 +1,16 @@
 package com.mrerenk.mapdistancefix.mixin.client;
 
+import com.mrerenk.mapdistancefix.config.ModConfig;
+import com.mrerenk.mapdistancefix.util.MapCenterTracker;
 import com.mrerenk.mapdistancefix.util.MapIconUtils;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.item.map.MapIcon;
 import net.minecraft.item.map.MapState;
 import net.minecraft.registry.RegistryKey;
+import net.minecraft.text.Text;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Mutable;
@@ -23,6 +27,10 @@ public class MapStateMixin {
     @Final
     @Mutable
     private boolean unlimitedTracking;
+
+    @Shadow
+    @Final
+    public byte scale;
 
     // Force unlimitedTracking = true on construction
     @Inject(method = "<init>", at = @At("RETURN"))
@@ -50,9 +58,51 @@ public class MapStateMixin {
             return;
         }
 
+        MapState self = (MapState) (Object) this;
+        double playerX = client.player.getX();
+        double playerZ = client.player.getZ();
+        ModConfig config = ModConfig.get();
+
         List<MapIcon> modifiedIcons = null;
         byte playerRotation = 0;
         boolean rotationCalculated = false;
+
+        // First pass: look for on-map player icons to update the center tracker
+        for (MapIcon icon : originalIcons) {
+            if (icon.getType() == MapIcon.Type.PLAYER) {
+                // Player is on the map - use this to estimate the map center
+                MapCenterTracker.updateFromOnMapIcon(
+                    self,
+                    icon,
+                    playerX,
+                    playerZ,
+                    scale
+                );
+                break; // Only need one on-map icon
+            }
+        }
+
+        // Calculate map boundary (half the map size in blocks)
+        // Map size = 128 * 2^scale blocks
+        int mapHalfSize = 64 * (1 << scale);
+
+        // Calculate distance using the tracked center
+        double distance = MapCenterTracker.calculateDistance(
+            self,
+            playerX,
+            playerZ
+        );
+        boolean hasValidDistance = distance >= 0;
+
+        // Check if player is off-map based on estimated center
+        boolean isOffMap = false;
+        MapCenterTracker.EstimatedCenter center =
+            MapCenterTracker.getEstimatedCenter(self);
+        if (center != null) {
+            double dx = playerX - center.x;
+            double dz = playerZ - center.z;
+            isOffMap = Math.abs(dx) > mapHalfSize || Math.abs(dz) > mapHalfSize;
+        }
 
         MapIconUtils.setPlayerContext(true);
         try {
@@ -60,6 +110,7 @@ public class MapStateMixin {
                 MapIconUtils.cachePlayerTypeFromIcon(icon);
 
                 if (MapIconUtils.isPlayerOffMapAny(icon)) {
+                    // Handle off-map player icons
                     if (modifiedIcons == null) {
                         modifiedIcons = new ArrayList<>();
                         // Backfill previous icons
@@ -76,10 +127,80 @@ public class MapStateMixin {
                         rotationCalculated = true;
                     }
 
-                    MapIconUtils.convertOffMapIcon(
-                        icon,
-                        playerRotation
-                    ).ifPresent(modifiedIcons::add);
+                    // Try to estimate center from off-map icon if we don't have it yet
+                    if (!MapCenterTracker.hasCenter(self)) {
+                        MapCenterTracker.estimateFromOffMapIcon(
+                            self,
+                            icon,
+                            playerX,
+                            playerZ,
+                            scale
+                        );
+                        // Recalculate distance after estimation
+                        distance = MapCenterTracker.calculateDistance(
+                            self,
+                            playerX,
+                            playerZ
+                        );
+                        hasValidDistance = distance >= 0;
+                    }
+
+                    Optional<MapIcon> convertedOpt =
+                        MapIconUtils.convertOffMapIcon(icon, playerRotation);
+
+                    if (convertedOpt.isPresent()) {
+                        MapIcon converted = convertedOpt.get();
+
+                        // Check if we should add distance text
+                        if (config.isShowDistance() && hasValidDistance) {
+                            // Show distance when:
+                            // - showDistanceWhenOffMap is true AND player is off-map, OR
+                            // - showDistanceInsideBoundaries is true (regardless of position)
+                            boolean shouldShow =
+                                (config.isShowDistanceWhenOffMap() &&
+                                    isOffMap) ||
+                                config.isShowDistanceInsideBoundaries();
+                            if (shouldShow) {
+                                MapIcon iconWithDistance =
+                                    createIconWithDistance(
+                                        converted,
+                                        distance,
+                                        config
+                                    );
+                                modifiedIcons.add(iconWithDistance);
+                            } else {
+                                modifiedIcons.add(converted);
+                            }
+                        } else {
+                            modifiedIcons.add(converted);
+                        }
+                    }
+                } else if (icon.getType() == MapIcon.Type.PLAYER) {
+                    // Handle on-map player icons - show distance inside boundaries if configured
+                    if (
+                        config.isShowDistance() &&
+                        config.isShowDistanceInsideBoundaries() &&
+                        hasValidDistance
+                    ) {
+                        if (modifiedIcons == null) {
+                            modifiedIcons = new ArrayList<>();
+                            // Backfill previous icons
+                            for (MapIcon prev : originalIcons) {
+                                if (prev == icon) break;
+                                modifiedIcons.add(prev);
+                            }
+                        }
+
+                        // Add player icon with distance text
+                        MapIcon iconWithDistance = createIconWithDistance(
+                            icon,
+                            distance,
+                            config
+                        );
+                        modifiedIcons.add(iconWithDistance);
+                    } else if (modifiedIcons != null) {
+                        modifiedIcons.add(icon);
+                    }
                 } else if (modifiedIcons != null) {
                     modifiedIcons.add(icon);
                 }
@@ -91,5 +212,24 @@ public class MapStateMixin {
         } finally {
             MapIconUtils.clearPlayerContext();
         }
+    }
+
+    /**
+     * Helper method to create a MapIcon with distance text.
+     */
+    private MapIcon createIconWithDistance(
+        MapIcon original,
+        double distance,
+        ModConfig config
+    ) {
+        String distanceText = config.formatDistance(distance);
+
+        return new MapIcon(
+            original.getType(),
+            original.getX(),
+            original.getZ(),
+            original.getRotation(),
+            Text.literal(distanceText)
+        );
     }
 }
