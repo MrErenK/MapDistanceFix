@@ -23,8 +23,8 @@ loom {
 
 repositories {
     // Add repositories to retrieve artifacts from in here.
-    maven { url "https://maven.shedaniel.me/" }
-    maven { url "https://maven.terraformersmc.com/releases/" }
+    maven { url = "https://maven.shedaniel.me/" }
+    maven { url = "https://maven.terraformersmc.com/releases/" }
 }
 
 dependencies {
@@ -39,17 +39,22 @@ dependencies {
 }
 
 processResources {
-    inputs.property "version", project.version
-    inputs.property "minecraft_version_range", project.minecraft_version_range
-    inputs.property "loader_version", project.loader_version
-    inputs.property "min_fabric_version", project.min_fabric_version
-    filteringCharset "UTF-8"
+    def projectVersion = project.version
+    def minecraftVersionRange = project.minecraft_version_range
+    def loaderVersion = project.loader_version
+    def minFabricVersion = project.min_fabric_version
+
+    inputs.property "version", projectVersion
+    inputs.property "minecraft_version_range", minecraftVersionRange
+    inputs.property "loader_version", loaderVersion
+    inputs.property "min_fabric_version", minFabricVersion
+    filteringCharset = "UTF-8"
 
     filesMatching("fabric.mod.json") {
-        expand "version": project.version,
-                "minecraft_version_range": project.minecraft_version_range,
-                "loader_version": project.loader_version,
-                "min_fabric_version": project.min_fabric_version
+        expand "version": projectVersion,
+                "minecraft_version_range": minecraftVersionRange,
+                "loader_version": loaderVersion,
+                "min_fabric_version": minFabricVersion
     }
 }
 
@@ -70,7 +75,8 @@ java {
 }
 
 jar {
+    def archiveName = project.base.archivesName.get()
     from("LICENSE") {
-        rename { "${it}_${project.base.archivesName.get()}" }
+        rename { "${it}_${archiveName}" }
     }
 }
