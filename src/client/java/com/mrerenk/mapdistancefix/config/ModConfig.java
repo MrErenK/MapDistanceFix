@@ -218,17 +218,18 @@ public class ModConfig {
     }
 
     /**
-     * Format a distance value according to config settings.
+     * Formats the distance value according to the configured format.
+     * Handles unit conversion if useShortUnits is enabled.
      *
-     * @param distanceBlocks the distance in blocks
-     * @return formatted distance string
+     * @param distance the distance in blocks
+     * @return the formatted distance string
      */
-    public String formatDistance(double distanceBlocks) {
-        int distance = (int) Math.round(distanceBlocks);
+    public String formatDistance(double distance) {
+        int distanceInt = (int) Math.round(distance);
 
-        if (isUseShortUnits() && distance >= getShortUnitThreshold()) {
+        if (isUseShortUnits() && distanceInt >= getShortUnitThreshold()) {
             // Use short format like "1.2k"
-            double shortened = distance / 1000.0;
+            double shortened = distanceInt / 1000.0;
             if (shortened >= 10) {
                 return String.format("%.0fk", shortened);
             } else {
@@ -238,10 +239,10 @@ public class ModConfig {
 
         // Apply format string
         try {
-            return String.format(getDistanceFormat(), distance);
+            return String.format(getDistanceFormat(), distanceInt);
         } catch (Exception e) {
             // Fallback if format is invalid
-            return distance + "m";
+            return distanceInt + "m";
         }
     }
 }
