@@ -2,11 +2,13 @@ package com.mrerenk.mapdistancefix.client;
 
 import com.mojang.brigadier.CommandDispatcher;
 import com.mrerenk.mapdistancefix.config.ModConfig;
+import com.mrerenk.mapdistancefix.network.MapCenterNetworkingClient;
 import com.mrerenk.mapdistancefix.util.MapCenterTracker;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.command.CommandRegistryAccess;
 import net.minecraft.text.Text;
@@ -32,6 +34,15 @@ public class MapdistancefixClient implements ClientModInitializer {
 
         // Load config
         ModConfig.get();
+
+        // Register client-side networking
+        MapCenterNetworkingClient.registerClientHandlers();
+
+        // Register disconnect handler to clear cache
+        ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
+            MapCenterTracker.clearCache();
+            LOGGER.info("Cleared map center cache on disconnect");
+        });
 
         // Register commands
         ClientCommandRegistrationCallback.EVENT.register(

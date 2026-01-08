@@ -1,5 +1,6 @@
 package com.mrerenk.mapdistancefix;
 
+import com.mrerenk.mapdistancefix.network.MapCenterNetworking;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.loader.api.FabricLoader;
 import org.slf4j.Logger;
@@ -21,6 +22,10 @@ public class MapdistancefixMod implements ModInitializer {
             .orElse("Unknown");
 
         LOGGER.info("Initializing {} v{} (Server)", MOD_NAME, version);
+
+        // Register server-side networking
+        MapCenterNetworking.registerServerHandlers();
+
         LOGGER.info(
             "{} v{} server initialized successfully",
             MOD_NAME,

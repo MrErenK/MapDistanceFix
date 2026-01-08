@@ -1,11 +1,16 @@
 package com.mrerenk.mapdistancefix.mixin.client;
 
+import com.mrerenk.mapdistancefix.client.MapdistancefixClient;
 import com.mrerenk.mapdistancefix.config.ModConfig;
+import com.mrerenk.mapdistancefix.network.MapCenterNetworkingClient;
 import com.mrerenk.mapdistancefix.util.MapCenterTracker;
 import com.mrerenk.mapdistancefix.util.MapDecorationUtils;
+import com.mrerenk.mapdistancefix.util.MapItemHelper;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.item.map.MapDecoration;
 import net.minecraft.item.map.MapDecorationTypes;
@@ -20,6 +25,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(MapState.class)
 public class MapStateMixin {
+
+    // Track which MapStates we've already requested from the server
+    private static final Set<MapState> requestedMaps =
+        ConcurrentHashMap.newKeySet();
 
     @Shadow
     @Final
@@ -45,6 +54,15 @@ public class MapStateMixin {
         double playerZ = client.player.getZ();
         ModConfig config = ModConfig.get();
 
+        // Request map center from server if we don't have an accurate one yet (and haven't requested it before)
+        if (
+            !MapCenterTracker.hasAccurateCenter(self) &&
+            !requestedMaps.contains(self)
+        ) {
+            requestMapCenterFromServer(client, self);
+            requestedMaps.add(self);
+        }
+
         List<MapDecoration> modifiedDecorations = null;
         byte playerRotation = 0;
         boolean rotationCalculated = false;
@@ -63,7 +81,6 @@ public class MapStateMixin {
                 break; // Only need one on-map decoration
             }
         }
-
         // Calculate map boundary (half the map size in blocks)
         // Map size = 128 * 2^scale blocks
         int mapHalfSize = 64 * (1 << scale);
@@ -74,12 +91,12 @@ public class MapStateMixin {
             playerX,
             playerZ
         );
+        // Show distance if we have any center (estimated or accurate from server)
         boolean hasValidDistance = distance >= 0;
 
-        // Check if player is off-map based on estimated center
+        // Check if player is off-map based on the map center
         boolean isOffMap = false;
-        MapCenterTracker.EstimatedCenter center =
-            MapCenterTracker.getEstimatedCenter(self);
+        MapCenterTracker.MapCenter center = MapCenterTracker.getCenter(self);
         if (center != null) {
             double dx = playerX - center.x;
             double dz = playerZ - center.z;
@@ -125,7 +142,18 @@ public class MapStateMixin {
                             playerX,
                             playerZ
                         );
+                        // Update hasValidDistance after estimation
                         hasValidDistance = distance >= 0;
+
+                        // Recalculate if player is off-map with the new center
+                        center = MapCenterTracker.getCenter(self);
+                        if (center != null) {
+                            double dx = playerX - center.x;
+                            double dz = playerZ - center.z;
+                            isOffMap =
+                                Math.abs(dx) > mapHalfSize ||
+                                Math.abs(dz) > mapHalfSize;
+                        }
                     }
 
                     Optional<MapDecoration> convertedOpt =
@@ -224,5 +252,25 @@ public class MapStateMixin {
             Optional.of(Text.literal(distanceText))
         );
         decorations.add(arrowWithText);
+    }
+
+    /**
+     * Request map center from the server for the currently held map.
+     */
+    private void requestMapCenterFromServer(
+        MinecraftClient client,
+        MapState mapState
+    ) {
+        try {
+            Integer mapId = MapItemHelper.getHeldMapId(client);
+            if (mapId != null) {
+                MapCenterNetworkingClient.requestMapCenter(mapId);
+            }
+        } catch (Exception e) {
+            MapdistancefixClient.LOGGER.debug(
+                "Failed to request map center from server",
+                e
+            );
+        }
     }
 }

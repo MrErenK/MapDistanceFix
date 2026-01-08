@@ -3,7 +3,6 @@
   "minVersion": "0.8",
   "package": "com.mrerenk.mapdistancefix.mixin",
   "compatibilityLevel": "JAVA_21",
-  "refmap": "MapDistanceFix-refmap.json",
   "mixins": ["MapStateMixin"],
   "injectors": {
     "defaultRequire": 1
