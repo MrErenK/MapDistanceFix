@@ -1,6 +1,8 @@
 package com.mrerenk.mapdistancefix;
 
+import com.mrerenk.mapdistancefix.network.MapCenterNetworking;
 import net.fabricmc.api.ModInitializer;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.loader.api.FabricLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,6 +23,19 @@ public class MapdistancefixMod implements ModInitializer {
             .orElse("Unknown");
 
         LOGGER.info("Initializing {} v{} (Server)", MOD_NAME, version);
-        LOGGER.info("{} v{} server initialized successfully", MOD_NAME, version);
+
+        // Register server-side networking
+        MapCenterNetworking.registerServerHandlers();
+
+        // Register player disconnect handler to clean up rate limit cache
+        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
+            MapCenterNetworking.cleanupRateLimitCache(handler.player);
+        });
+
+        LOGGER.info(
+            "{} v{} server initialized successfully",
+            MOD_NAME,
+            version
+        );
     }
 }

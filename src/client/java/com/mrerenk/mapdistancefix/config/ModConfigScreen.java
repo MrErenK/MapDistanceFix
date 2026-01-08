@@ -106,20 +106,8 @@ public class ModConfigScreen {
                 .setDefaultValue("%dm")
                 .setTooltip(
                     Text.translatable(
-                        "config.mapdistancefix.option.distanceFormat.tooltip.1"
+                        "config.mapdistancefix.option.distanceFormat.tooltip"
                     )
-                        .append(Text.literal("%d"))
-                        .append(
-                            Text.translatable(
-                                "config.mapdistancefix.option.distanceFormat.tooltip.2"
-                            )
-                        )
-                        .append(Text.literal("%dm"))
-                        .append(
-                            Text.translatable(
-                                "config.mapdistancefix.option.distanceFormat.tooltip.3"
-                            )
-                        )
                 )
                 .setSaveConsumer(config::setDistanceFormat)
                 .build()

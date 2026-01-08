@@ -1,11 +1,18 @@
 package com.mrerenk.mapdistancefix.mixin.client;
 
+import com.mrerenk.mapdistancefix.client.MapdistancefixClient;
 import com.mrerenk.mapdistancefix.config.ModConfig;
+import com.mrerenk.mapdistancefix.network.MapCenterNetworkingClient;
 import com.mrerenk.mapdistancefix.util.MapCenterTracker;
 import com.mrerenk.mapdistancefix.util.MapIconUtils;
+import com.mrerenk.mapdistancefix.util.MapItemHelper;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.WeakHashMap;
+import java.util.concurrent.ConcurrentHashMap;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.item.map.MapIcon;
 import net.minecraft.item.map.MapState;
@@ -22,6 +29,14 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(MapState.class)
 public class MapStateMixin {
+
+    // Track which MapStates we've already requested from the server
+    // Using WeakHashMap to allow garbage collection when MapState is no longer referenced
+    private static final Map<MapState, Long> requestedMaps =
+        new WeakHashMap<>();
+
+    // Rate limiting: minimum time between requests (in milliseconds)
+    private static final long REQUEST_COOLDOWN_MS = 5000; // 5 seconds
 
     @Shadow
     @Final
@@ -67,6 +82,24 @@ public class MapStateMixin {
         byte playerRotation = 0;
         boolean rotationCalculated = false;
 
+        // Request map center from server if we don't have an accurate one yet
+        // with rate limiting to prevent spam
+        if (!MapCenterTracker.hasAccurateCenter(self)) {
+            synchronized (requestedMaps) {
+                Long lastRequestTime = requestedMaps.get(self);
+                long currentTime = System.currentTimeMillis();
+
+                // Only request if we haven't requested before, or if cooldown has passed
+                if (
+                    lastRequestTime == null ||
+                    (currentTime - lastRequestTime) > REQUEST_COOLDOWN_MS
+                ) {
+                    requestMapCenterFromServer(client, self);
+                    requestedMaps.put(self, currentTime);
+                }
+            }
+        }
+
         // First pass: look for on-map player icons to update the center tracker
         for (MapIcon icon : originalIcons) {
             if (icon.getType() == MapIcon.Type.PLAYER) {
@@ -92,12 +125,12 @@ public class MapStateMixin {
             playerX,
             playerZ
         );
+        // Show distance if we have any center (estimated or accurate from server)
         boolean hasValidDistance = distance >= 0;
 
-        // Check if player is off-map based on estimated center
+        // Check if player is off-map based on the map center
         boolean isOffMap = false;
-        MapCenterTracker.EstimatedCenter center =
-            MapCenterTracker.getEstimatedCenter(self);
+        MapCenterTracker.MapCenter center = MapCenterTracker.getCenter(self);
         if (center != null) {
             double dx = playerX - center.x;
             double dz = playerZ - center.z;
@@ -142,7 +175,18 @@ public class MapStateMixin {
                             playerX,
                             playerZ
                         );
+                        // Update hasValidDistance after estimation
                         hasValidDistance = distance >= 0;
+
+                        // Recalculate if player is off-map with the new center
+                        center = MapCenterTracker.getCenter(self);
+                        if (center != null) {
+                            double dx = playerX - center.x;
+                            double dz = playerZ - center.z;
+                            isOffMap =
+                                Math.abs(dx) > mapHalfSize ||
+                                Math.abs(dz) > mapHalfSize;
+                        }
                     }
 
                     Optional<MapIcon> convertedOpt =
@@ -151,7 +195,10 @@ public class MapStateMixin {
                     if (convertedOpt.isPresent()) {
                         MapIcon converted = convertedOpt.get();
 
-                        // Check if we should add distance text
+                        // Always add the player arrow at its correct position first
+                        modifiedIcons.add(converted);
+
+                        // Then add distance text if configured
                         if (config.isShowDistance() && hasValidDistance) {
                             // Show distance when:
                             // - showDistanceWhenOffMap is true AND player is off-map, OR
@@ -161,18 +208,13 @@ public class MapStateMixin {
                                     isOffMap) ||
                                 config.isShowDistanceInsideBoundaries();
                             if (shouldShow) {
-                                MapIcon iconWithDistance =
-                                    createIconWithDistance(
-                                        converted,
-                                        distance,
-                                        config
-                                    );
-                                modifiedIcons.add(iconWithDistance);
-                            } else {
-                                modifiedIcons.add(converted);
+                                addDistanceIcon(
+                                    modifiedIcons,
+                                    converted,
+                                    distance,
+                                    config
+                                );
                             }
-                        } else {
-                            modifiedIcons.add(converted);
                         }
                     }
                 } else if (icon.getType() == MapIcon.Type.PLAYER) {
@@ -191,13 +233,11 @@ public class MapStateMixin {
                             }
                         }
 
-                        // Add player icon with distance text
-                        MapIcon iconWithDistance = createIconWithDistance(
-                            icon,
-                            distance,
-                            config
-                        );
-                        modifiedIcons.add(iconWithDistance);
+                        // Add the original player icon
+                        modifiedIcons.add(icon);
+
+                        // Add distance text
+                        addDistanceIcon(modifiedIcons, icon, distance, config);
                     } else if (modifiedIcons != null) {
                         modifiedIcons.add(icon);
                     }
@@ -215,21 +255,45 @@ public class MapStateMixin {
     }
 
     /**
-     * Helper method to create a MapIcon with distance text.
+     * Helper method to add distance text to the player icon.
      */
-    private MapIcon createIconWithDistance(
-        MapIcon original,
+    private void addDistanceIcon(
+        List<MapIcon> icons,
+        MapIcon playerIcon,
         double distance,
         ModConfig config
     ) {
         String distanceText = config.formatDistance(distance);
 
-        return new MapIcon(
-            original.getType(),
-            original.getX(),
-            original.getZ(),
-            original.getRotation(),
+        // Replace the icon we just added with one that has text
+        icons.remove(icons.size() - 1);
+        MapIcon arrowWithText = new MapIcon(
+            playerIcon.getType(),
+            playerIcon.getX(),
+            playerIcon.getZ(),
+            playerIcon.getRotation(),
             Text.literal(distanceText)
         );
+        icons.add(arrowWithText);
+    }
+
+    /**
+     * Request map center from the server for the currently held map.
+     */
+    private void requestMapCenterFromServer(
+        MinecraftClient client,
+        MapState mapState
+    ) {
+        try {
+            Integer mapId = MapItemHelper.getHeldMapId(client);
+            if (mapId != null) {
+                MapCenterNetworkingClient.requestMapCenter(mapId);
+            }
+        } catch (Exception e) {
+            MapdistancefixClient.LOGGER.debug(
+                "Failed to request map center from server",
+                e
+            );
+        }
     }
 }
