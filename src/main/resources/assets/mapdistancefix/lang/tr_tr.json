@@ -1,0 +1,23 @@
+{
+  "config.mapdistancefix.title": "Map Distance Fix Ayarları",
+  "config.mapdistancefix.category.general": "Genel",
+  "config.mapdistancefix.category.formatting": "Biçimlendirme",
+
+  "config.mapdistancefix.option.showDistance": "Mesafeyi göster",
+  "config.mapdistancefix.option.showDistance.tooltip": "Oyuncu simgelesinin harita merkezine olan mesafeyi gösterir",
+
+  "config.mapdistancefix.option.showDistanceWhenOffMap": "Harita dışında mesafeyi göster",
+  "config.mapdistancefix.option.showDistanceWhenOffMap.tooltip": "Oyuncunun harita sınırları dışında olduğunda mesafeyi gösterir",
+
+  "config.mapdistancefix.option.showDistanceInsideBoundaries": "Harita içinde mesafeyi göster",
+  "config.mapdistancefix.option.showDistanceInsideBoundaries.tooltip": "Oyuncunun harita sınırları içinde olduğunda mesafeyi gösterir",
+
+  "config.mapdistancefix.option.distanceFormat": "Mesafe Biçimi",
+  "config.mapdistancefix.option.distanceFormat.tooltip": "Mesafe gösterimi için format dizesi. ％d uzaklık değeri için kullanılır.\nÖrnek: \"％dm\" \"100m\" olarak gösterilir",
+
+  "config.mapdistancefix.option.useShortUnits": "Kısa Birimleri Kullan",
+  "config.mapdistancefix.option.useShortUnits.tooltip": "Büyük mesafeler için kısaltılmış birimleri kullan (örneğin \"1500m\" yerine \"1.5k\")",
+
+  "config.mapdistancefix.option.shortUnitThreshold": "Kısa Birimlerin Eşiği",
+  "config.mapdistancefix.option.shortUnitThreshold.tooltip": "Kısa birimlerin kullanılmaya başlanacağı blok mesafesi"
+}
