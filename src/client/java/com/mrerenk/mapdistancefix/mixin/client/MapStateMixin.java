@@ -6,11 +6,10 @@ import com.mrerenk.mapdistancefix.network.MapCenterNetworkingClient;
 import com.mrerenk.mapdistancefix.util.MapCenterTracker;
 import com.mrerenk.mapdistancefix.util.MapDecorationUtils;
 import com.mrerenk.mapdistancefix.util.MapItemHelper;
+import com.mrerenk.mapdistancefix.util.RequestedMapsCache;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.item.map.MapDecoration;
 import net.minecraft.item.map.MapDecorationTypes;
@@ -25,10 +24,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(MapState.class)
 public class MapStateMixin {
-
-    // Track which MapStates we've already requested from the server
-    private static final Set<MapState> requestedMaps =
-        ConcurrentHashMap.newKeySet();
 
     @Shadow
     @Final
@@ -57,10 +52,10 @@ public class MapStateMixin {
         // Request map center from server if we don't have an accurate one yet (and haven't requested it before)
         if (
             !MapCenterTracker.hasAccurateCenter(self) &&
-            !requestedMaps.contains(self)
+            !RequestedMapsCache.hasRequested(self)
         ) {
             requestMapCenterFromServer(client, self);
-            requestedMaps.add(self);
+            RequestedMapsCache.markRequested(self);
         }
 
         List<MapDecoration> modifiedDecorations = null;

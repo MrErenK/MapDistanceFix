@@ -1,8 +1,11 @@
 package com.mrerenk.mapdistancefix.util;
 
 import com.mrerenk.mapdistancefix.client.MapdistancefixClient;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.item.map.MapDecoration;
@@ -21,14 +24,43 @@ import net.minecraft.item.map.MapState;
  */
 public final class MapCenterTracker {
 
+    // Maximum number of entries in session cache before eviction
+    private static final int MAX_SESSION_CACHE_SIZE = 1000;
+
     // Runtime cache: MapState instance -> MapCenter
+    // Using WeakHashMap to allow MapState instances to be garbage collected
+    // Synchronized wrapper for thread safety
     private static final Map<MapState, MapCenter> instanceCache =
-        new ConcurrentHashMap<>();
+        Collections.synchronizedMap(new WeakHashMap<>());
 
     // Session cache: "dimension_scale_centerX_centerZ" -> MapCenter
     // This allows each unique map to be cached during the current session
+    // Uses LRU eviction to prevent unbounded growth
     private static final Map<String, MapCenter> sessionCache =
-        new ConcurrentHashMap<>();
+        Collections.synchronizedMap(
+            new LinkedHashMap<String, MapCenter>(
+                MAX_SESSION_CACHE_SIZE + 1,
+                0.75f,
+                true
+            ) {
+                @Override
+                protected boolean removeEldestEntry(
+                    Map.Entry<String, MapCenter> eldest
+                ) {
+                    boolean shouldRemove = size() > MAX_SESSION_CACHE_SIZE;
+                    if (shouldRemove) {
+                        MapdistancefixClient.LOGGER.debug(
+                            "Evicting oldest map center from cache: ({}, {}) dimension={} scale={}",
+                            eldest.getValue().x,
+                            eldest.getValue().z,
+                            eldest.getValue().dimension,
+                            eldest.getValue().scale
+                        );
+                    }
+                    return shouldRemove;
+                }
+            }
+        );
 
     /**
      * Represents a map center.

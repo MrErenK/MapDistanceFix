@@ -4,6 +4,7 @@ import com.mojang.brigadier.CommandDispatcher;
 import com.mrerenk.mapdistancefix.config.ModConfig;
 import com.mrerenk.mapdistancefix.network.MapCenterNetworkingClient;
 import com.mrerenk.mapdistancefix.util.MapCenterTracker;
+import com.mrerenk.mapdistancefix.util.RequestedMapsCache;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
@@ -41,7 +42,10 @@ public class MapdistancefixClient implements ClientModInitializer {
         // Register disconnect handler to clear cache
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
             MapCenterTracker.clearCache();
-            LOGGER.info("Cleared map center cache on disconnect");
+            RequestedMapsCache.clearRequestedMaps();
+            LOGGER.info(
+                "Cleared map center cache and requested maps on disconnect"
+            );
         });
 
         // Register commands
@@ -128,11 +132,12 @@ public class MapdistancefixClient implements ClientModInitializer {
                     ClientCommandManager.literal("clearcache").executes(
                         context -> {
                             MapCenterTracker.clearCache();
+                            RequestedMapsCache.clearRequestedMaps();
                             context
                                 .getSource()
                                 .sendFeedback(
                                     Text.literal(
-                                        "§a[MapDistanceFix] Map center cache cleared!"
+                                        "§a[MapDistanceFix] Map center cache and requested maps cleared!"
                                     )
                                 );
                             return 1;

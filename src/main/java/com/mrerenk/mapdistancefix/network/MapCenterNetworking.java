@@ -2,7 +2,11 @@ package com.mrerenk.mapdistancefix.network;
 
 import com.mrerenk.mapdistancefix.MapdistancefixMod;
 import com.mrerenk.mapdistancefix.util.ComponentHelper;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.component.type.MapIdComponent;
 import net.minecraft.item.ItemStack;
@@ -28,6 +32,12 @@ public class MapCenterNetworking {
     public static final Identifier MAP_CENTER_RESPONSE_ID = Identifier.tryParse(
         "mapdistancefix:map_center_response"
     );
+
+    // Lightweight burst protection: Track last request time per player
+    // Only blocks if same player sends multiple requests within 50ms (prevents packet spam)
+    private static final Map<UUID, Long> lastRequestTime =
+        new ConcurrentHashMap<>();
+    private static final long BURST_PROTECTION_MS = 50; // 50ms minimum between requests
 
     /**
      * Request packet sent from client to server asking for map center coordinates.
@@ -86,6 +96,22 @@ public class MapCenterNetworking {
     }
 
     /**
+     * Check if a request should be blocked due to burst protection.
+     * Returns true if allowed, false if blocked (too fast).
+     */
+    private static boolean checkBurstProtection(UUID playerUuid) {
+        long now = System.currentTimeMillis();
+        Long lastTime = lastRequestTime.get(playerUuid);
+
+        if (lastTime != null && (now - lastTime) < BURST_PROTECTION_MS) {
+            return false; // Too fast, block this request
+        }
+
+        lastRequestTime.put(playerUuid, now);
+        return true; // Allow request
+    }
+
+    /**
      * Register server-side packet handlers.
      * Called during server initialization.
      */
@@ -100,11 +126,37 @@ public class MapCenterNetworking {
             MapCenterResponsePayload.CODEC
         );
 
+        // Register disconnect handler to clean up burst protection tracking
+        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
+            UUID playerUuid = handler.getPlayer().getUuid();
+            lastRequestTime.remove(playerUuid);
+        });
+
         // Handle map center requests from clients
         ServerPlayNetworking.registerGlobalReceiver(
             MapCenterRequestPayload.ID,
             (payload, context) -> {
                 int mapId = payload.mapId();
+                UUID playerUuid = context.player().getUuid();
+
+                // Validate map ID (must be non-negative)
+                if (mapId < 0) {
+                    MapdistancefixMod.LOGGER.warn(
+                        "Invalid map ID {} from player {}",
+                        mapId,
+                        context.player().getName().getString()
+                    );
+                    return; // Reject invalid map IDs
+                }
+
+                // Burst protection: Prevent rapid-fire requests (spam/DoS protection)
+                if (!checkBurstProtection(playerUuid)) {
+                    MapdistancefixMod.LOGGER.debug(
+                        "Burst protection triggered for player {} (requests too fast)",
+                        context.player().getName().getString()
+                    );
+                    return; // Silently ignore too-fast requests
+                }
 
                 context
                     .server()
@@ -124,6 +176,10 @@ public class MapCenterNetworking {
                                     !heldItem.isOf(Items.FILLED_MAP) &&
                                     !heldItem.isOf(Items.MAP)
                                 ) {
+                                    MapdistancefixMod.LOGGER.debug(
+                                        "Player {} not holding a map",
+                                        context.player().getName().getString()
+                                    );
                                     return; // Not holding a map
                                 }
                             }
@@ -133,6 +189,12 @@ public class MapCenterNetworking {
                                 heldItem
                             );
                             if (heldMapId == null || heldMapId != mapId) {
+                                MapdistancefixMod.LOGGER.debug(
+                                    "Map ID mismatch for player {}: requested={}, held={}",
+                                    context.player().getName().getString(),
+                                    mapId,
+                                    heldMapId
+                                );
                                 return; // Map ID mismatch
                             }
 
@@ -166,6 +228,16 @@ public class MapCenterNetworking {
                                 .getMapState(mapIdComponent);
 
                             if (mapState != null) {
+                                // Validate map scale (0-4 are valid scales)
+                                if (mapState.scale < 0 || mapState.scale > 4) {
+                                    MapdistancefixMod.LOGGER.warn(
+                                        "Invalid map scale {} for mapId {}",
+                                        mapState.scale,
+                                        mapId
+                                    );
+                                    return;
+                                }
+
                                 // Send the center coordinates back to the client
                                 String dimension = mapState.dimension
                                     .getValue()
@@ -192,11 +264,19 @@ public class MapCenterNetworking {
                                     mapState.scale,
                                     dimension
                                 );
+                            } else {
+                                MapdistancefixMod.LOGGER.debug(
+                                    "Map state not found for mapId {} requested by player {}",
+                                    mapId,
+                                    context.player().getName().getString()
+                                );
                             }
                         } catch (Exception e) {
                             MapdistancefixMod.LOGGER.error(
-                                "Error handling map center request",
-                                e
+                                "Error handling map center request from player {} for mapId {}: {}",
+                                context.player().getName().getString(),
+                                mapId,
+                                e.getMessage()
                             );
                         }
                     });
