@@ -2,7 +2,6 @@ package com.mrerenk.mapdistancefix.util;
 
 import com.mrerenk.mapdistancefix.client.MapdistancefixClient;
 import java.lang.ref.WeakReference;
-import java.lang.reflect.Field;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import net.minecraft.item.map.MapIcon;

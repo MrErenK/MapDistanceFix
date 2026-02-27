@@ -2,9 +2,7 @@ package com.mrerenk.mapdistancefix.util;
 
 import com.mrerenk.mapdistancefix.client.MapdistancefixClient;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.item.map.MapIcon;
 import net.minecraft.item.map.MapState;
 
