@@ -4,20 +4,23 @@
   "config.mapdistancefix.category.formatting": "Форматирование",
 
   "config.mapdistancefix.option.showDistance": "Показывать расстояние",
-  "config.mapdistancefix.option.showDistance.tooltip": "Отображать расстояние до центра карты на значках игроков",
+  "config.mapdistancefix.option.showDistance.tooltip": "Показывать расстояние до центра карты на значке игрока",
 
   "config.mapdistancefix.option.showDistanceWhenOffMap": "Расстояние вне карты",
-  "config.mapdistancefix.option.showDistanceWhenOffMap.tooltip": "Отображать расстояние, когда игрок находится за пределами границ карты",
+  "config.mapdistancefix.option.showDistanceWhenOffMap.tooltip": "Показывать расстояние, когда игрок находится за пределами карты",
 
   "config.mapdistancefix.option.showDistanceInsideBoundaries": "Расстояние внутри границ",
-  "config.mapdistancefix.option.showDistanceInsideBoundaries.tooltip": "Отображать расстояние, даже если игрок находится в пределах карты",
+  "config.mapdistancefix.option.showDistanceInsideBoundaries.tooltip": "Показывать расстояние, даже когда игрок находится в пределах карты",
 
   "config.mapdistancefix.option.distanceFormat": "Формат расстояния",
-  "config.mapdistancefix.option.distanceFormat.tooltip": "Строка формата для отображения расстояния. Используйте ％d для значения расстояния.\nПример: \"％dm\" будет выглядеть как \"100m\"",
+  "config.mapdistancefix.option.distanceFormat.tooltip": "Строка формата для отображения расстояния. Используйте ％d для значения.\nПример: \"％dm\" будет выглядеть как \"100m\"",
 
   "config.mapdistancefix.option.useShortUnits": "Сокращённые единицы",
-  "config.mapdistancefix.option.useShortUnits.tooltip": "Использовать сокращения (например, «1.5k» вместо «1500m») для больших расстояний",
+  "config.mapdistancefix.option.useShortUnits.tooltip": "Использовать сокращения (например, \"1.5k\" вместо \"1500m\") для больших расстояний",
 
   "config.mapdistancefix.option.shortUnitThreshold": "Порог сокращения единиц",
-  "config.mapdistancefix.option.shortUnitThreshold.tooltip": "Расстояние в блоках, при котором начинают использоваться сокращённые единицы"
+  "config.mapdistancefix.option.shortUnitThreshold.tooltip": "Расстояние в блоках, при котором начинают использоваться сокращённые единицы",
+
+  "config.mapdistancefix.option.showStructureDistances": "Показывать расстояние до ближайшего строения",
+  "config.mapdistancefix.option.showStructureDistances.tooltip": "Показывать расстояние до ближайшего строения (особняк, монумент, деревня и т.д.) под стрелкой игрока вместо расстояния до центра карты"
 }

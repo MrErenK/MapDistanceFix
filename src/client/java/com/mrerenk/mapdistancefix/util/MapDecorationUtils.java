@@ -3,6 +3,7 @@ package com.mrerenk.mapdistancefix.util;
 import com.mrerenk.mapdistancefix.client.MapdistancefixClient;
 import java.lang.ref.WeakReference;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import net.minecraft.item.map.MapDecoration;
 import net.minecraft.item.map.MapDecorationType;
@@ -14,6 +15,21 @@ import net.minecraft.util.math.MathHelper;
  * Thread-safe utility class for managing map decorations
  */
 public final class MapDecorationUtils {
+
+    private static final Set<RegistryEntry<MapDecorationType>> STRUCTURE_TYPES =
+        Set.of(
+            MapDecorationTypes.MANSION,
+            MapDecorationTypes.MONUMENT,
+            MapDecorationTypes.RED_X,
+            MapDecorationTypes.VILLAGE_DESERT,
+            MapDecorationTypes.VILLAGE_PLAINS,
+            MapDecorationTypes.VILLAGE_SAVANNA,
+            MapDecorationTypes.VILLAGE_SNOWY,
+            MapDecorationTypes.VILLAGE_TAIGA,
+            MapDecorationTypes.JUNGLE_TEMPLE,
+            MapDecorationTypes.SWAMP_HUT,
+            MapDecorationTypes.TRIAL_CHAMBERS
+        );
 
     // Constants
     public static final float DEGREES_PER_ROTATION = 22.5f;
@@ -146,6 +162,38 @@ public final class MapDecorationUtils {
     }
 
     /**
+     * Returns true if the decoration represents a structure we show distance for.
+     */
+    public static boolean isStructureDecoration(MapDecoration decoration) {
+        if (decoration == null) return false;
+        for (RegistryEntry<MapDecorationType> type : STRUCTURE_TYPES) {
+            if (type.equals(decoration.type())) return true;
+        }
+        return false;
+    }
+
+    /**
+     * Calculates the world position of a decoration using the map center and scale,
+     * then returns the distance from the given player position to that world position.
+     * Returns -1 if the map center is not known.
+     */
+    public static double calculateStructureDistance(
+        MapDecoration decoration,
+        double playerX,
+        double playerZ,
+        MapCenterTracker.MapCenter center,
+        byte scale
+    ) {
+        if (center == null) return -1;
+        int blocksPerPixel = 1 << scale;
+        double worldX = center.x + (decoration.x() / 2.0) * blocksPerPixel;
+        double worldZ = center.z + (decoration.z() / 2.0) * blocksPerPixel;
+        double dx = playerX - worldX;
+        double dz = playerZ - worldZ;
+        return Math.sqrt(dx * dx + dz * dz);
+    }
+
+    /**
      * Check if we're currently in a player context
      * This is used by mixins to determine if they should apply player-specific behavior
      * First checks ThreadLocal, then falls back to stack trace inspection for compatibility
@@ -227,5 +275,4 @@ public final class MapDecorationUtils {
         }
         return MapDecorationTypes.PLAYER;
     }
-
 }

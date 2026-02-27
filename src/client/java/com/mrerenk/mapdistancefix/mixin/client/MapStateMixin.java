@@ -65,7 +65,6 @@ public class MapStateMixin {
         // First pass: look for on-map player decorations to update the center tracker
         for (MapDecoration decoration : originalDecorations) {
             if (decoration.type().equals(MapDecorationTypes.PLAYER)) {
-                // Player is on the map - use this to estimate the map center
                 MapCenterTracker.updateFromOnMapDecoration(
                     self,
                     decoration,
@@ -73,29 +72,54 @@ public class MapStateMixin {
                     playerZ,
                     scale
                 );
-                break; // Only need one on-map decoration
+                break;
             }
         }
         // Calculate map boundary (half the map size in blocks)
         // Map size = 128 * 2^scale blocks
         int mapHalfSize = 64 * (1 << scale);
 
-        // Calculate distance using the tracked center
         double distance = MapCenterTracker.calculateDistance(
             self,
             playerX,
             playerZ
         );
-        // Show distance if we have any center (estimated or accurate from server)
         boolean hasValidDistance = distance >= 0;
 
-        // Check if player is off-map based on the map center
         boolean isOffMap = false;
         MapCenterTracker.MapCenter center = MapCenterTracker.getCenter(self);
         if (center != null) {
             double dx = playerX - center.x;
             double dz = playerZ - center.z;
             isOffMap = Math.abs(dx) > mapHalfSize || Math.abs(dz) > mapHalfSize;
+        }
+
+        // Second pass: find the nearest structure decoration distance to use as
+        // the player arrow label. Falls back to map center distance if none exist.
+        if (config.isShowStructureDistances() && center != null) {
+            double nearestStructureDist = -1;
+            for (MapDecoration decoration : originalDecorations) {
+                if (
+                    !MapDecorationUtils.isStructureDecoration(decoration)
+                ) continue;
+                double d = MapDecorationUtils.calculateStructureDistance(
+                    decoration,
+                    playerX,
+                    playerZ,
+                    center,
+                    scale
+                );
+                if (
+                    d >= 0 &&
+                    (nearestStructureDist < 0 || d < nearestStructureDist)
+                ) {
+                    nearestStructureDist = d;
+                }
+            }
+            if (nearestStructureDist >= 0) {
+                distance = nearestStructureDist;
+                hasValidDistance = true;
+            }
         }
 
         MapDecorationUtils.setPlayerContext(true);
