@@ -2,7 +2,9 @@ package com.mrerenk.mapdistancefix.util;
 
 import com.mrerenk.mapdistancefix.client.MapdistancefixClient;
 import java.lang.ref.WeakReference;
+import java.util.EnumSet;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import net.minecraft.item.map.MapIcon;
 import net.minecraft.text.Text;
@@ -12,6 +14,12 @@ import net.minecraft.util.math.MathHelper;
  * Thread-safe utility class for managing map icons
  */
 public final class MapIconUtils {
+
+    private static final Set<MapIcon.Type> STRUCTURE_TYPES = EnumSet.of(
+        MapIcon.Type.MANSION,
+        MapIcon.Type.MONUMENT,
+        MapIcon.Type.RED_X
+    );
 
     // Constants
     public static final float DEGREES_PER_ROTATION = 22.5f;
@@ -152,6 +160,35 @@ public final class MapIconUtils {
      */
     public static boolean isPlayerOffMapAny(MapIcon icon) {
         return icon != null && shouldConvertIconType(getIconType(icon));
+    }
+
+    /**
+     * Returns true if the icon represents a structure we show distance for.
+     */
+    public static boolean isStructureDecoration(MapIcon icon) {
+        if (icon == null) return false;
+        return STRUCTURE_TYPES.contains(getIconType(icon));
+    }
+
+    /**
+     * Calculates the world position of an icon using the map center and scale,
+     * then returns the distance from the given player position to that world position.
+     * Returns -1 if the map center is not known.
+     */
+    public static double calculateStructureDistance(
+        MapIcon icon,
+        double playerX,
+        double playerZ,
+        MapCenterTracker.MapCenter center,
+        byte scale
+    ) {
+        if (center == null) return -1;
+        int blocksPerPixel = 1 << scale;
+        double worldX = center.x + (icon.getX() / 2.0) * blocksPerPixel;
+        double worldZ = center.z + (icon.getZ() / 2.0) * blocksPerPixel;
+        double dx = playerX - worldX;
+        double dz = playerZ - worldZ;
+        return Math.sqrt(dx * dx + dz * dz);
     }
 
     /**

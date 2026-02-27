@@ -89,6 +89,25 @@ public class ModConfigScreen {
                 .build()
         );
 
+        // Show Structure Distances toggle
+        general.addEntry(
+            entryBuilder
+                .startBooleanToggle(
+                    Text.translatable(
+                        "config.mapdistancefix.option.showStructureDistances"
+                    ),
+                    config.isShowStructureDistances()
+                )
+                .setDefaultValue(true)
+                .setTooltip(
+                    Text.translatable(
+                        "config.mapdistancefix.option.showStructureDistances.tooltip"
+                    )
+                )
+                .setSaveConsumer(config::setShowStructureDistances)
+                .build()
+        );
+
         // Formatting category
         ConfigCategory formatting = builder.getOrCreateCategory(
             Text.translatable("config.mapdistancefix.category.formatting")

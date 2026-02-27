@@ -30,6 +30,7 @@ public class ModConfig {
     private String distanceFormat = null;
     private Boolean useShortUnits = null;
     private Integer shortUnitThreshold = null;
+    private Boolean showStructureDistances = null;
 
     // Default values
     private static final boolean DEFAULT_SHOW_DISTANCE = true;
@@ -39,6 +40,7 @@ public class ModConfig {
     private static final String DEFAULT_DISTANCE_FORMAT = "%dm";
     private static final boolean DEFAULT_USE_SHORT_UNITS = true;
     private static final int DEFAULT_SHORT_UNIT_THRESHOLD = 1000;
+    private static final boolean DEFAULT_SHOW_STRUCTURE_DISTANCES = true;
 
     /**
      * Get the singleton config instance, loading from file if necessary.
@@ -125,6 +127,10 @@ public class ModConfig {
         }
         if (shortUnitThreshold == null) {
             shortUnitThreshold = DEFAULT_SHORT_UNIT_THRESHOLD;
+            changed = true;
+        }
+        if (showStructureDistances == null) {
+            showStructureDistances = DEFAULT_SHOW_STRUCTURE_DISTANCES;
             changed = true;
         }
 
@@ -215,6 +221,16 @@ public class ModConfig {
 
     public void setShortUnitThreshold(int shortUnitThreshold) {
         this.shortUnitThreshold = shortUnitThreshold;
+    }
+
+    public boolean isShowStructureDistances() {
+        return showStructureDistances != null
+            ? showStructureDistances
+            : DEFAULT_SHOW_STRUCTURE_DISTANCES;
+    }
+
+    public void setShowStructureDistances(boolean showStructureDistances) {
+        this.showStructureDistances = showStructureDistances;
     }
 
     /**
