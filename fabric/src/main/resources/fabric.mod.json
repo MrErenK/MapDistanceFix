@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "id": "${mod_id}",
+  "version": "${version}",
+  "name": "${mod_name}",
+  "description": "${description}",
+  "authors": ["${mod_author}"],
+  "contact": {
+    "homepage": "https://github.com/mrerenk/MapDistanceFix",
+    "sources": "https://github.com/mrerenk/MapDistanceFix",
+    "issues": "https://github.com/mrerenk/MapDistanceFix/issues"
+  },
+  "license": "MIT",
+  "icon": "assets/${mod_id}/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": ["com.mrerenk.mapdistancefix.MapdistancefixFabric"],
+    "modmenu": ["com.mrerenk.mapdistancefix.config.ModMenuIntegration"]
+  },
+  "mixins": ["${mod_id}.mixins.json"],
+  "depends": {
+    "fabricloader": ">=${fabric_loader_version}",
+    "fabric-api": "${fabric_version}",
+    "minecraft": "${minecraft_version}"
+  },
+  "suggests": {
+    "cloth-config": "*",
+    "modmenu": "*"
+  }
+}

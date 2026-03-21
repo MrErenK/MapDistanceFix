@@ -2,7 +2,7 @@
 
 A very simple Minecraft Fabric mod that fixes map player indicators to always show the player's position and direction, even when outside map boundaries, making it much easier to navigate treasure maps and other map items.
 
-## 🎯 Why This Mod?
+## Why This Mod?
 
 In vanilla Minecraft, when you're far from a map's boundaries, the player indicator either disappears entirely or shows as a generic "player_off_map" and "player_off_limits" decorations without directional information. This mod fixes that by:
 
@@ -10,12 +10,12 @@ In vanilla Minecraft, when you're far from a map's boundaries, the player indica
 2. Maintaining correct rotation to show which direction you're facing
 3. Ensuring the player is always visible for better navigation.
 
-## 📦 Installation
+## Installation
 
 ### Requirements
-- **Minecraft**: 1.20.5 or later
-- **Fabric Loader**: 0.17.2 or later
-- **Fabric API**: 0.97.8+1.20.5 or later
+- **Minecraft**: 1.21 or later
+- **Fabric Loader**: 0.18.4 or later
+- **Fabric API**: 0.102.0+1.21 or later
 
 ### Steps
 1. Install [Fabric Loader](https://fabricmc.net/use/)
@@ -24,13 +24,13 @@ In vanilla Minecraft, when you're far from a map's boundaries, the player indica
 4. Place both `.jar` files in your `mods` folder
 5. Launch Minecraft with the Fabric profile
 
-## 🔄 Compatibility
+## Compatibility
 
 - **Server Compatibility**: Should work on any Minecraft server (vanilla, Fabric, Forge, Paper, etc.)
 - **Multiplayer**: Compatible with multiplayer environments. For always showing players even outside boundaries, the mod needs to be installed on the server as well.
 - **Other Mods**: Should be compatible with most other mods that don't heavily modify map rendering
 
-## 🐛 Troubleshooting
+## Troubleshooting
 
 ### Common Issues
 
@@ -45,7 +45,7 @@ If you encounter issues:
 3. Try with minimal mods to isolate conflicts
 4. Report issues on the [GitHub Issues page](https://github.com/mrerenk/MapDistanceFix/issues)
 
-## 🏗️ Building from Source
+## Building from Source
 
 ### Development Setup
 1. Clone the repository: `git clone https://github.com/mrerenk/MapDistanceFix.git`
@@ -60,7 +60,7 @@ If you encounter issues:
 
 The built mod will be located in `build/libs/`
 
-## 🤝 Contributing
+## Contributing
 
 Contributions are welcome! Here's how you can help:
 
@@ -75,11 +75,11 @@ Contributions are welcome! Here's how you can help:
 - Include Minecraft version, mod version, and log files
 - Describe steps to reproduce the issue
 
-## 📄 License
+## License
 
 This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - **Fabric Team** for the excellent modding framework
 - **Minecraft Community** for inspiration and feedback

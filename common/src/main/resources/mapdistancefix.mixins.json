@@ -1,0 +1,11 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.mrerenk.${mod_id}.mixin",
+  "compatibilityLevel": "JAVA_${java_version}",
+  "refmap": "${mod_id}.refmap.json",
+  "mixins": ["MapItemSavedDataMixin"],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
