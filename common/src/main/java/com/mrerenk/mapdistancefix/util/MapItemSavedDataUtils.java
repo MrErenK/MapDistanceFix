@@ -74,7 +74,7 @@ public final class MapItemSavedDataUtils {
     ) {
         if (dimension == Level.NETHER) {
             if (world != null) {
-                int i = (int) (world.getLevelData().getDayTime() / 10L);
+                int i = (int) (world.getLevelData().getGameTime() / 10L);
                 return (byte) (((i * i * 34187121 + i * 121) >> 15) & 15);
             } else {
                 return 0;
