@@ -194,4 +194,23 @@ public abstract class MapItemSavedDataMixin {
         }
         return new MapDecoration(decorationType, x, y, rot, nameOptional);
     }
+
+    // Disables the spinning indicator in the Nether by making the game think we're in the Overworld
+    @Redirect(
+        method = "addDecoration",
+        at = @At(
+            value = "FIELD",
+            target = "Lnet/minecraft/world/level/saveddata/maps/MapItemSavedData;dimension:Lnet/minecraft/resources/ResourceKey;"
+        ),
+        require = 0
+    )
+    private ResourceKey<Level> redirectDimensionCheckOld(
+        MapItemSavedData instance
+    ) {
+        // Always return OVERWORLD to prevent the spinning indicator in Nether
+        if (this.dimension == Level.NETHER) {
+            return Level.OVERWORLD;
+        }
+        return this.dimension;
+    }
 }
